@@ -1,12 +1,15 @@
+import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { BIOMARKERS_100 } from "@/lib/biomarkers100"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session) {
-    return new Response("Unauthorized", { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const { searchParams } = new URL(req.url)
@@ -132,5 +135,5 @@ export async function GET(req: Request) {
     return trend
   })
 
-  return Response.json(finalTrends)
+  return NextResponse.json(finalTrends)
 }

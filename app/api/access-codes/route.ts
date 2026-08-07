@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+export const dynamic = "force-dynamic"
+
 function generateCode() {
   const chars = '0123456789'
   let result = ''
@@ -13,7 +15,7 @@ function generateCode() {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== "PATIENT") {
-    return new Response("Unauthorized", { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const userId = session.user.id
@@ -37,5 +39,5 @@ export async function POST(req: Request) {
     }
   })
 
-  return Response.json({ code: newCode.code })
+  return NextResponse.json({ code: newCode.code })
 }
