@@ -1,7 +1,3 @@
-import type { PrismaConfig } from 'prisma'
+import { defineConfig } from 'prisma/config'
 
-export default {
-  seed: {
-    run: 'npx tsx prisma/seed.ts',
-  },
-} satisfies PrismaConfig
+export default defineConfig({})
