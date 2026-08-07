@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { Navbar } from "@/components/Navbar"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { ExternalLink, Beaker } from "lucide-react"
-import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
@@ -41,11 +40,14 @@ export default async function LabsPage() {
                 </CardDescription>
               </CardHeader>
               <CardFooter>
-                <Button className="w-full" asChild>
-                  <a href={lab.bookingUrl || "#"} target="_blank" rel="noopener noreferrer">
-                    Book Diagnostic Test <ExternalLink className="ml-2 h-4 w-4" />
-                  </a>
-                </Button>
+                <a 
+                  href={lab.bookingUrl || "#"} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ className: "w-full" })}
+                >
+                  Book Diagnostic Test <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
               </CardFooter>
             </Card>
           ))}
