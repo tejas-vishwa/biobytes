@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AlertCircle, FileText, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { ShareCodeButton } from "./ShareCodeButton"
+
 export const dynamic = "force-dynamic"
 
 export default async function PatientDashboard() {
