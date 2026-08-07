@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import Tesseract from "tesseract.js"
-import { extractText, getDocumentProxy } from "unpdf"
+import { extractText } from "unpdf"
 
+export const dynamic = "force-dynamic"
 export const maxDuration = 60 // Allow longer execution time for Vercel Serverless
 
 export async function POST(req: Request) {

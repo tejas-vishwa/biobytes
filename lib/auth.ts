@@ -1,13 +1,14 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // Do NOT use PrismaAdapter with JWT strategy + Credentials provider
+  // PrismaAdapter requires database sessions which conflict with JWT
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: "/login",
@@ -24,44 +25,49 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email.toLowerCase()
+        try {
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email.toLowerCase()
+            }
+          })
+
+          if (!user) {
+            await prisma.activityLog.create({
+              data: { action: "LOGIN_FAILED", details: `Failed login attempt for ${credentials.email}` }
+            }).catch(() => {}) // Don't fail login if activity log fails
+            return null
           }
-        })
 
-        if (!user) {
+          if (user.accountStatus === "SUSPENDED") {
+            throw new Error("Your account has been suspended.")
+          }
+
+          const isPasswordValid = await compare(credentials.password, user.passwordHash)
+
+          if (!isPasswordValid) {
+            await prisma.activityLog.create({
+              data: { action: "LOGIN_FAILED", details: `Invalid password for ${user.email}`, userId: user.id }
+            }).catch(() => {})
+            return null
+          }
+
           await prisma.activityLog.create({
-            data: { action: "LOGIN_FAILED", details: `Failed login attempt for ${credentials.email}` }
-          })
+            data: { action: "LOGIN_SUCCESS", details: `User logged in: ${user.email}`, userId: user.id }
+          }).catch(() => {})
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role
+          }
+        } catch (error: any) {
+          if (error.message === "Your account has been suspended.") {
+            throw error
+          }
+          console.error("Auth error:", error)
           return null
-        }
-
-        if (user.accountStatus === "SUSPENDED") {
-          await prisma.activityLog.create({
-            data: { action: "LOGIN_BLOCKED", details: `Suspended user attempted login: ${user.email}`, userId: user.id }
-          })
-          throw new Error("Your account has been suspended.")
-        }
-
-        const isPasswordValid = await compare(credentials.password, user.passwordHash)
-
-        if (!isPasswordValid) {
-          await prisma.activityLog.create({
-            data: { action: "LOGIN_FAILED", details: `Invalid password for ${user.email}`, userId: user.id }
-          })
-          return null
-        }
-
-        await prisma.activityLog.create({
-          data: { action: "LOGIN_SUCCESS", details: `User logged in: ${user.email}`, userId: user.id }
-        })
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
         }
       }
     })
@@ -77,7 +83,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = user.role
+        token.role = (user as any).role
       }
       return token
     }
