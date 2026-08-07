@@ -2,10 +2,9 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { seedDatabase } from "@/lib/seed-db"
 
 export const authOptions: NextAuthOptions = {
-  // Do NOT use PrismaAdapter with JWT strategy + Credentials provider
-  // PrismaAdapter requires database sessions which conflict with JWT
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -25,17 +24,28 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const emailLower = credentials.email.toLowerCase()
+
         try {
-          const user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email.toLowerCase()
-            }
+          // Check if table exists or user exists
+          let user = await prisma.user.findUnique({
+            where: { email: emailLower }
+          }).catch(async () => {
+            // If table doesn't exist in Turso, seed the database automatically!
+            await seedDatabase()
+            return await prisma.user.findUnique({ where: { email: emailLower } })
           })
+
+          // If demo user is missing, attempt auto-seeding
+          if (!user && (emailLower.includes("demo") || emailLower.includes("biobytes"))) {
+            await seedDatabase()
+            user = await prisma.user.findUnique({ where: { email: emailLower } })
+          }
 
           if (!user) {
             await prisma.activityLog.create({
               data: { action: "LOGIN_FAILED", details: `Failed login attempt for ${credentials.email}` }
-            }).catch(() => {}) // Don't fail login if activity log fails
+            }).catch(() => {})
             return null
           }
 

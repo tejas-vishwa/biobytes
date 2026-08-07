@@ -1,18 +1,158 @@
 import { prisma } from "./prisma"
 import { hash } from "bcryptjs"
 
+export async function createTablesIfNotExist() {
+  const ddlStatements = [
+    `CREATE TABLE IF NOT EXISTS "User" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "email" TEXT NOT NULL UNIQUE,
+      "passwordHash" TEXT NOT NULL,
+      "name" TEXT,
+      "role" TEXT NOT NULL DEFAULT 'PATIENT',
+      "accountStatus" TEXT NOT NULL DEFAULT 'ACTIVE',
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );`,
+    `CREATE TABLE IF NOT EXISTS "DoctorProfile" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "userId" TEXT NOT NULL UNIQUE,
+      "licenseNumber" TEXT NOT NULL,
+      "specialization" TEXT,
+      FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "Report" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "fileName" TEXT NOT NULL,
+      "fileUrl" TEXT NOT NULL,
+      "fileData" TEXT,
+      "fileType" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'UPLOADED',
+      "rawText" TEXT,
+      "parsedJson" TEXT,
+      "aiSummary" TEXT,
+      "reportDate" DATETIME,
+      "labName" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "BiomarkerDefinition" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "code" TEXT NOT NULL UNIQUE,
+      "displayName" TEXT NOT NULL,
+      "unit" TEXT NOT NULL,
+      "refMin" REAL,
+      "refMax" REAL,
+      "category" TEXT
+    );`,
+    `CREATE TABLE IF NOT EXISTS "ExtractedMetric" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "reportId" TEXT NOT NULL,
+      "biomarkerId" TEXT NOT NULL,
+      "value" REAL NOT NULL,
+      "unit" TEXT NOT NULL,
+      "refMin" REAL,
+      "refMax" REAL,
+      "isAbnormal" BOOLEAN NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("reportId") REFERENCES "Report" ("id") ON DELETE CASCADE,
+      FOREIGN KEY ("biomarkerId") REFERENCES "BiomarkerDefinition" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "DoctorAccessCode" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "code" TEXT NOT NULL UNIQUE,
+      "expiresAt" DATETIME NOT NULL,
+      "maxUses" INTEGER NOT NULL DEFAULT 5,
+      "usedCount" INTEGER NOT NULL DEFAULT 0,
+      "isRevoked" BOOLEAN NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "AccessCodeUsage" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "codeId" TEXT NOT NULL,
+      "accessedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "ipAddress" TEXT,
+      FOREIGN KEY ("codeId") REFERENCES "DoctorAccessCode" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "HealthAlert" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "metricId" TEXT,
+      "severity" TEXT NOT NULL DEFAULT 'INFO',
+      "message" TEXT NOT NULL,
+      "isRead" BOOLEAN NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "LabPartner" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "logoUrl" TEXT,
+      "bookingUrl" TEXT,
+      "commissionPct" REAL NOT NULL DEFAULT 0,
+      "isActive" BOOLEAN NOT NULL DEFAULT 1,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );`,
+    `CREATE TABLE IF NOT EXISTS "LabBooking" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "labId" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'PENDING',
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE,
+      FOREIGN KEY ("labId") REFERENCES "LabPartner" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "Appointment" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "doctorId" TEXT NOT NULL,
+      "scheduledTime" DATETIME NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'PENDING',
+      "accessCode" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE,
+      FOREIGN KEY ("doctorId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "UserHealthRecord" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "reportId" TEXT NOT NULL UNIQUE,
+      "patientId" TEXT NOT NULL,
+      "hemoglobin" REAL,
+      "fasting_blood_sugar" REAL,
+      "thyroid_tsh" REAL,
+      "ldl_cholesterol" REAL,
+      "hdl_cholesterol" REAL,
+      "triglycerides" REAL,
+      "vitamin_d" REAL,
+      "vitamin_b12" REAL,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("reportId") REFERENCES "Report" ("id") ON DELETE CASCADE,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "ActivityLog" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "action" TEXT NOT NULL,
+      "details" TEXT,
+      "userId" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL
+    );`
+  ]
+
+  for (const statement of ddlStatements) {
+    try {
+      await prisma.$executeRawUnsafe(statement)
+    } catch (err) {
+      console.warn("Table DDL execution note:", err)
+    }
+  }
+}
+
 export async function seedDatabase() {
   try {
-    // Check if user table exists and has demo user
-    const existingPatient = await prisma.user.findFirst({
-      where: { email: "priya@demo.com" }
-    })
-
-    if (existingPatient) {
-      return { success: true, message: "Database is already seeded with demo accounts." }
-    }
-
-    console.log("Seeding database...")
+    // 0. Ensure tables exist in Turso
+    await createTablesIfNotExist()
 
     // 1. Seed Biomarkers
     const biomarkersData = [
@@ -110,9 +250,6 @@ export async function seedDatabase() {
 
     // 4. Seed Reports & Metrics for Priya
     const now = new Date()
-    const sixMonthsAgo = new Date(now)
-    sixMonthsAgo.setMonth(now.getMonth() - 6)
-
     const existingPriyaReport = await prisma.report.findFirst({ where: { patientId: priya.id } })
     if (!existingPriyaReport) {
       const report1 = await prisma.report.create({
@@ -126,10 +263,10 @@ export async function seedDatabase() {
         }
       })
 
-      const hdl = biomarkers.find(b => b.code === 'HDL')!
-      const ldl = biomarkers.find(b => b.code === 'LDL')!
-      const chol = biomarkers.find(b => b.code === 'CHOLESTEROL_TOTAL')!
-      const hba1c = biomarkers.find(b => b.code === 'HBA1C')!
+      const hdl = biomarkers.find(b => b.code === 'HDL')
+      const ldl = biomarkers.find(b => b.code === 'LDL')
+      const chol = biomarkers.find(b => b.code === 'CHOLESTEROL_TOTAL')
+      const hba1c = biomarkers.find(b => b.code === 'HBA1C')
 
       if (hdl && ldl && chol && hba1c) {
         await prisma.extractedMetric.createMany({
@@ -166,7 +303,7 @@ export async function seedDatabase() {
       })
     }
 
-    return { success: true, message: "Database successfully seeded with demo accounts!" }
+    return { success: true, message: "Database successfully created and seeded with demo accounts!" }
   } catch (error: any) {
     console.error("Database seeding error:", error)
     return { success: false, error: error?.message || "Failed to seed database" }
