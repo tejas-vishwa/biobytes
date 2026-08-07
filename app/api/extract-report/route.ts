@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import Tesseract from "tesseract.js"
 import { extractText, getDocumentProxy } from "unpdf"
-
-const prisma = new PrismaClient()
 
 export const maxDuration = 60 // Allow longer execution time for Vercel Serverless
 
@@ -210,18 +208,28 @@ export async function POST(req: Request) {
       }
     }
 
-    // Hardcoded Database Routing (Strict Schema Mapping)
+    // Store PDF binary directly in Turso database as Base64
+    const base64Data = buffer.toString("base64")
+
     const report = await prisma.report.create({
       data: {
         patientId: session.user.id,
         fileName: file.name,
-        fileUrl: "/placeholder.pdf", // Normally would be uploaded to S3/Cloudinary
+        fileUrl: "/placeholder.pdf",
+        fileData: base64Data,
+        fileType: mimeType || file.type || "application/pdf",
         status: "PARSED",
         parsedJson: JSON.stringify(parsedData), // Save parsed JSON string instead of raw text
         aiSummary: parsedData.overall_summary || null,
         labName: parsedData.lab_name,
         reportDate: parsedData.report_date ? new Date(parsedData.report_date) : new Date(),
       },
+    })
+
+    // Update fileUrl to serve directly from Turso database endpoint
+    await prisma.report.update({
+      where: { id: report.id },
+      data: { fileUrl: `/api/reports/${report.id}/file` }
     })
 
     // Dynamic Biomarker Routing

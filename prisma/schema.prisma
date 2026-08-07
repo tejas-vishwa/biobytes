@@ -1,9 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -42,6 +43,8 @@ model Report {
   patient     User     @relation("PatientReports", fields: [patientId], references: [id], onDelete: Cascade)
   fileName    String
   fileUrl     String
+  fileData    String?  // Base64 encoded file content stored directly in Turso
+  fileType    String?  // MIME type (e.g. application/pdf)
   status      String   @default("UPLOADED") // UPLOADED, PROCESSING, PARSED, FAILED
   rawText     String?
   parsedJson  String?

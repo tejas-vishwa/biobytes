@@ -1,13 +1,11 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, FileText, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ShareCodeButton } from "./ShareCodeButton"
-
-const prisma = new PrismaClient()
 
 export default async function PatientDashboard() {
   const session = await getServerSession(authOptions)
@@ -194,10 +192,18 @@ export default async function PatientDashboard() {
                         {report.reportDate ? new Date(report.reportDate).toLocaleDateString() : 'Unknown date'}
                       </p>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">
                         {report.status}
                       </span>
+                      <a
+                        href={report.fileUrl || `/api/reports/${report.id}/file`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-indigo-600 hover:underline font-medium ml-2"
+                      >
+                        View PDF
+                      </a>
                     </div>
                   </div>
                 ))}

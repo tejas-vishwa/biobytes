@@ -1,11 +1,9 @@
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { Navbar } from "@/components/Navbar"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, Beaker } from "lucide-react"
 import Link from "next/link"
-
-const prisma = new PrismaClient()
 
 export default async function LabsPage() {
   const labs = await prisma.labPartner.findMany({

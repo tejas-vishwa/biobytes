@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { writeFile } from "fs/promises"
 import path from "path"
 import os from "os"
-
-const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -34,16 +32,26 @@ export async function POST(req: Request) {
     // If public/uploads doesn't exist, we fallback to just saving in temp and serving a fake URL
   }
 
-  // 1. Create Report record
+  const base64Data = buffer.toString("base64")
+
+  // 1. Create Report record in Turso Database
   const report = await prisma.report.create({
     data: {
       patientId: session.user.id,
       fileName: file.name,
       fileUrl: `/uploads/${fileName}`,
+      fileData: base64Data,
+      fileType: file.type || "application/pdf",
       status: "PARSED", // Mocking instant OCR parsing
       reportDate: new Date(),
       labName: "Mock Lab Partner",
     }
+  })
+
+  // Update fileUrl to serve directly from Turso database endpoint
+  await prisma.report.update({
+    where: { id: report.id },
+    data: { fileUrl: `/api/reports/${report.id}/file` }
   })
 
   // 2. Mock AI Extraction

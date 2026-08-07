@@ -1,9 +1,7 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { BIOMARKERS_100 } from "@/lib/biomarkers100"
-
-const prisma = new PrismaClient()
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)

@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client"
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, User, FileText } from "lucide-react"
 import { PatientTrendsDashboard } from "@/components/PatientTrendsDashboard"
-
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/prisma"
 
 export default async function DoctorPatientView({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId: code } = await params
