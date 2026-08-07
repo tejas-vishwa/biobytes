@@ -37,12 +37,12 @@ export default async function LabsPage() {
                   </div>
                 </div>
                 <CardDescription className="line-clamp-3">
-                  {lab.description || "Leading diagnostic service provider offering comprehensive health packages with BioBytes automated report sync."}
+                  Leading diagnostic service provider offering comprehensive health packages with BioBytes automated report sync.
                 </CardDescription>
               </CardHeader>
               <CardFooter>
                 <Button className="w-full" asChild>
-                  <a href={lab.websiteUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={lab.bookingUrl || "#"} target="_blank" rel="noopener noreferrer">
                     Book Diagnostic Test <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
