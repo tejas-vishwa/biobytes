@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { seedDatabase } from "@/lib/seed-db"
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || "biobytes-production-secret-2026",
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
