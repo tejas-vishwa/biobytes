@@ -5,7 +5,7 @@ import { signIn, getSession } from "next-auth/react"
 import { BackButton } from "@/components/BackButton"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Activity } from "lucide-react"
+import { Activity, User, Stethoscope, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,9 +32,7 @@ export default function LoginPage() {
       setError("Invalid email or password")
       setLoading(false)
     } else {
-      // Fetch session directly via next-auth to bypass fetch caching
       const session = await getSession()
-      
       if (session?.user?.role === "ADMIN") {
         router.push("/admin")
       } else if (session?.user?.role === "DOCTOR") {
@@ -46,20 +44,18 @@ export default function LoginPage() {
     }
   }
 
-  const demoLogin = async (emailToLogin: string, roleUrl: string) => {
+  const demoLogin = async (emailToLogin: string, password: string, roleUrl: string) => {
     setLoading(true)
     setError("")
-    
-    const demoPassword = "demo1234"
 
     const res = await signIn("credentials", {
       email: emailToLogin,
-      password: demoPassword,
+      password,
       redirect: false,
     })
 
     if (res?.error) {
-      setError("Demo account login failed. Please ensure the database is seeded.")
+      setError("Demo account login failed. Please visit /api/setup-db first to seed the database.")
       setLoading(false)
     } else {
       router.push(roleUrl)
@@ -67,50 +63,64 @@ export default function LoginPage() {
     }
   }
 
+  const patients = [
+    { name: "Priya Sharma", email: "priya@demo.com", color: "rose" },
+    { name: "Sankalp Verma", email: "sankalp@demo.com", color: "blue" },
+    { name: "Utkarsh Singh", email: "utkarsh@demo.com", color: "indigo" },
+    { name: "Tejas Vishwakarma", email: "tejas@demo.com", color: "cyan" },
+  ]
+
+  const colorMap: Record<string, string> = {
+    rose: "bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800",
+    blue: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
+    indigo: "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800",
+    cyan: "bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800",
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950">
       <div className="w-full max-w-md absolute top-4 left-4">
         <BackButton />
       </div>
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex justify-center mb-8">
+      <div className="w-full max-w-md space-y-6">
+        <div className="flex justify-center mb-4">
           <Link href="/" className="flex items-center space-x-2">
             <Activity className="h-8 w-8 text-primary" />
             <span className="font-bold text-2xl tracking-tight">BioBytes e-health tracker</span>
           </Link>
         </div>
-        
+
         <Card>
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">
-            Sign in to BioBytes e-health tracker
-          </CardTitle>
-          <CardDescription>
-            Enter your credentials to access your portal
-          </CardDescription>
+              Sign in to BioBytes e-health tracker
+            </CardTitle>
+            <CardDescription>
+              Enter your credentials to access your portal
+            </CardDescription>
           </CardHeader>
           <form onSubmit={onSubmit}>
             <CardContent className="space-y-4">
-              {error && <div className="text-sm text-destructive font-medium text-center">{error}</div>}
+              {error && <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">{error}</div>}
               <div className="space-y-2">
                 <label className="text-sm font-medium leading-none" htmlFor="email">Email</label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="m@example.com" 
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required 
+                  required
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium leading-none" htmlFor="password">Password</label>
-                <Input 
-                  id="password" 
-                  type="password" 
+                <Input
+                  id="password"
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required 
+                  required
                 />
               </div>
             </CardContent>
@@ -118,30 +128,71 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
-              <div className="relative flex items-center py-2">
+
+              <div className="relative flex items-center py-1 w-full">
                 <div className="flex-grow border-t border-muted"></div>
-                <span className="flex-shrink-0 mx-4 text-muted-foreground text-xs uppercase">Or</span>
+                <span className="flex-shrink-0 mx-4 text-muted-foreground text-xs uppercase">Quick Demo Login</span>
                 <div className="flex-grow border-t border-muted"></div>
               </div>
-              <Button type="button" variant="outline" className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200" onClick={() => demoLogin("sankalp@demo.com", "/patient/dashboard")} disabled={loading}>
-                Login as Sankalp Verma (Patient)
-              </Button>
-              <Button type="button" variant="outline" className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200" onClick={() => demoLogin("utkarsh@demo.com", "/patient/dashboard")} disabled={loading}>
-                Login as Utkarsh Singh (Patient)
-              </Button>
-              <Button type="button" variant="outline" className="w-full bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border-cyan-200" onClick={() => demoLogin("tejas@demo.com", "/patient/dashboard")} disabled={loading}>
-                Login as Tejas Vishwakarma (Patient)
-              </Button>
-              <Button type="button" variant="outline" className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" onClick={() => demoLogin("doctor@demo.com", "/doctor/dashboard")} disabled={loading}>
-                Login as Dr. Rahul Verma
-              </Button>
-              <div className="text-xs text-center text-muted-foreground mt-4">
-                Admin: admin@biobytes.in / admin1234
+
+              {/* Patient Demo Accounts */}
+              <div className="w-full space-y-2">
+                <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                  <User className="h-3 w-3" /> Patients (password: demo1234)
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {patients.map((p) => (
+                    <Button
+                      key={p.email}
+                      type="button"
+                      variant="outline"
+                      className={`text-xs py-2 h-auto ${colorMap[p.color]}`}
+                      onClick={() => demoLogin(p.email, "demo1234", "/patient/dashboard")}
+                      disabled={loading}
+                    >
+                      {p.name}
+                    </Button>
+                  ))}
+                </div>
               </div>
+
+              {/* Doctor Demo Account */}
+              <div className="w-full space-y-2">
+                <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                  <Stethoscope className="h-3 w-3" /> Doctor (password: demo1234)
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
+                  onClick={() => demoLogin("doctor@demo.com", "demo1234", "/doctor/dashboard")}
+                  disabled={loading}
+                >
+                  Dr. Rahul Verma
+                </Button>
+              </div>
+
+              {/* Admin Demo Account */}
+              <div className="w-full space-y-2">
+                <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" /> Admin (password: admin1234)
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
+                  onClick={() => demoLogin("admin@biobytes.in", "admin1234", "/admin")}
+                  disabled={loading}
+                >
+                  Admin User
+                </Button>
+              </div>
+
             </CardFooter>
           </form>
         </Card>
-        <div className="text-sm text-center text-muted-foreground mt-4">
+
+        <div className="text-sm text-center text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-primary hover:underline">
             Sign Up
