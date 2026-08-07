@@ -3,7 +3,12 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(req: Request, context: any) {
+export const dynamic = "force-dynamic"
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== "ADMIN") {
@@ -12,7 +17,7 @@ export async function PATCH(req: Request, context: any) {
 
     const body = await req.json();
     const { action } = body;
-    const { id } = await context.params;
+    const { id } = await params;
 
     if (!["SUSPEND", "ACTIVATE", "RESET_PASSWORD"].includes(action)) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { ExternalLink, Beaker } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 export default async function LabsPage() {
   const labs = await prisma.labPartner.findMany({
     where: { isActive: true }
@@ -23,25 +25,27 @@ export default async function LabsPage() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {labs.map(lab => (
-            <Card key={lab.id} className="hover:shadow-lg transition-all duration-300">
-              <CardHeader className="text-center">
-                <div className="mx-auto bg-blue-100 p-4 rounded-full mb-4">
-                  <Beaker className="h-8 w-8 text-blue-600" />
+            <Card key={lab.id} className="flex flex-col justify-between hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg dark:bg-blue-950 dark:text-blue-400">
+                    <Beaker className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">{lab.name}</CardTitle>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Diagnostic Lab</span>
+                  </div>
                 </div>
-                <CardTitle className="text-2xl">{lab.name}</CardTitle>
-                <CardDescription>Verified BioBytes e-health tracker Partner</CardDescription>
+                <CardDescription className="line-clamp-3">
+                  {lab.description || "Leading diagnostic service provider offering comprehensive health packages with BioBytes automated report sync."}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Get seamless integration of your test results when booking through our platform.
-                </p>
-              </CardContent>
-              <CardFooter className="flex justify-center">
-                <a href={lab.bookingUrl || "#"} target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full sm:w-auto" variant="outline">
-                    Book Test <ExternalLink className="ml-2 h-4 w-4" />
-                  </Button>
-                </a>
+              <CardFooter>
+                <Button className="w-full" asChild>
+                  <a href={lab.websiteUrl} target="_blank" rel="noopener noreferrer">
+                    Book Diagnostic Test <ExternalLink className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
               </CardFooter>
             </Card>
           ))}
