@@ -8,19 +8,22 @@ const FALLBACK_TURSO_URL = "libsql://biobytes-tejas-vishwa.aws-ap-south-1.turso.
 const FALLBACK_TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkT1NRT1pKOEVmR1pETXA3cHhTemZnIiwib3JnX2lkIjoxMDAwMjE2ODM3fQ.3bcCRpUmkddyZnr87dduNRl3v33J3M96gIXbpPZ6jTd-kRhExPKVongsL4FbwJ8B-JagMI3Gl37C88VfnR7xBQ"
 
 function getDatabaseUrl(): string {
-  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL
-  if (!url || url === 'undefined' || url.trim() === '') {
-    return FALLBACK_TURSO_URL
+  const envUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL
+  if (envUrl && typeof envUrl === 'string' && envUrl !== 'undefined' && envUrl.trim() !== '') {
+    const trimmed = envUrl.trim()
+    if (trimmed.startsWith('libsql://') || trimmed.startsWith('https://') || trimmed.startsWith('file:')) {
+      return trimmed
+    }
   }
-  return url
+  return FALLBACK_TURSO_URL
 }
 
 function getAuthToken(): string {
   const token = process.env.TURSO_AUTH_TOKEN
-  if (!token || token === 'undefined' || token.trim() === '') {
-    return FALLBACK_TURSO_TOKEN
+  if (token && typeof token === 'string' && token !== 'undefined' && token.trim() !== '') {
+    return token.trim()
   }
-  return token
+  return FALLBACK_TURSO_TOKEN
 }
 
 const dbUrl = getDatabaseUrl()
