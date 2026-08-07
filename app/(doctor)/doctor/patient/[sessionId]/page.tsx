@@ -2,6 +2,8 @@ import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, User, FileText } from "lucide-react"
 import { PatientTrendsDashboard } from "@/components/PatientTrendsDashboard"
+import { prisma } from "@/lib/prisma"
+
 export const dynamic = "force-dynamic"
 
 export default async function DoctorPatientView({ params }: { params: Promise<{ sessionId: string }> }) {
