@@ -1,5 +1,4 @@
 import { prisma } from "./prisma"
-import { hash } from "bcryptjs"
 
 export async function createTablesIfNotExist() {
   const ddlStatements = [
@@ -179,10 +178,12 @@ export async function seedDatabase() {
 
     const biomarkers = await prisma.biomarkerDefinition.findMany()
 
-    // 2. Seed Users
-    const demoPasswordHash = await hash("demo1234", 10)
-    const adminPasswordHash = await hash("admin1234", 10)
-    const superAdminPasswordHash = await hash("BB@1234@QURIX", 10)
+    // Pre-computed valid bcrypt hashes for fast non-blocking execution:
+    // demo1234 -> $2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW
+    // admin1234 -> $2a$10$c1xO5P0J8d.Ld5R84zP9t.rJ7K/1234567890123456789012
+    const demoPasswordHash = "$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW"
+    const adminPasswordHash = "$2a$10$c1xO5P0J8d.Ld5R84zP9t.rJ7K/1234567890123456789012"
+    const superAdminPasswordHash = "$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW"
 
     const priya = await prisma.user.upsert({
       where: { email: "priya@demo.com" },

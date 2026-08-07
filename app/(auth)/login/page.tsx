@@ -48,14 +48,28 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
 
-    const res = await signIn("credentials", {
+    let res = await signIn("credentials", {
       email: emailToLogin,
       password,
       redirect: false,
     })
 
+    // If first attempt fails (e.g. DB not seeded yet), trigger setup-db API and retry automatically
     if (res?.error) {
-      setError("Demo account login failed. Please visit /api/setup-db first to seed the database.")
+      try {
+        await fetch("/api/setup-db")
+        res = await signIn("credentials", {
+          email: emailToLogin,
+          password,
+          redirect: false,
+        })
+      } catch (e) {
+        console.error("Auto-seed retry error:", e)
+      }
+    }
+
+    if (res?.error) {
+      setError("Demo account login failed. Please verify Turso environment variables in Vercel.")
       setLoading(false)
     } else {
       router.push(roleUrl)
