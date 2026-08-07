@@ -9,7 +9,8 @@ const libsql = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 })
 
-const adapter = new PrismaLibSQL(libsql)
+// Cast libsql to any to satisfy TypeScript strict signature between @libsql/client and @prisma/adapter-libsql
+const adapter = new PrismaLibSQL(libsql as any)
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter })
 
