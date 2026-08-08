@@ -25,7 +25,6 @@ const tursoUrl = getValidTursoUrl()
 const tursoToken = getValidTursoToken()
 
 
-process.env.DATABASE_URL = tursoUrl
 process.env.TURSO_DATABASE_URL = tursoUrl
 process.env.TURSO_AUTH_TOKEN = tursoToken
 
