@@ -72,12 +72,24 @@ export async function POST(req: Request) {
       biomarkers: []
     }
 
+    // Helper function to strip salutations (Mr., Mrs., Ms., Smt., Shri., Dr., Master, Miss)
+    const cleanSalutationsAndTitles = (str: string): string => {
+      return str
+        .replace(/\b(mr\.|mrs\.|ms\.|smt\.|shri\.|dr\.|master\.|miss\.|mr|mrs|ms|smt|shri|dr|master|miss)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+
     // Try to extract patient name
-    const nameMatch = extractedText.match(/(?:name|patient name|patient)\s*[:\-]?\s*([A-Za-z\s\.]+)/i)
+    const titlePattern = "(?:mr\\.|mrs\\.|ms\\.|dr\\.|smt\\.|shri\\.|master\\.|miss\\.|mr|mrs|ms|dr|smt|shri|master|miss)?"
+    const nameMatch = extractedText.match(new RegExp(`(?:patient\\s*name|patient\\'?s?\\s*name|name\\s*of\\s*patient|name)\\s*[:\\-\\=]?\\s*${titlePattern}\\s*([A-Za-z\\s\\.]{2,50})`, 'i'))
     if (nameMatch && nameMatch[1]) {
-      let rawName = nameMatch[1].trim().substring(0, 50)
-      rawName = rawName.replace(/^(mr\.|mrs\.|ms\.|dr\.|mr|mrs|ms|dr)\s+/i, '').trim()
-      parsedData.patient_name = rawName
+      let rawName = nameMatch[1].trim()
+      rawName = rawName.replace(/\b(age|sex|gender|dob|ref|referred|collected|lab|date|years|y\/m|male|female|sample|pid|uhid|sid)\b.*/i, '').trim()
+      rawName = cleanSalutationsAndTitles(rawName)
+      if (rawName.length > 1) {
+        parsedData.patient_name = rawName
+      }
     }
 
     // Try to extract Report Date
@@ -194,15 +206,21 @@ export async function POST(req: Request) {
     }
 
     // Identity Verification
-    let reportPatientName = (parsedData.patient_name || "").toLowerCase()
-    const accountPatientName = (session.user.name || "").toLowerCase()
+    let reportPatientName = cleanSalutationsAndTitles((parsedData.patient_name || "").toLowerCase())
+    let accountPatientName = cleanSalutationsAndTitles((session.user.name || "").toLowerCase())
     
-    if (reportPatientName && accountPatientName) {
-      reportPatientName = reportPatientName.replace(/^(mr\.|mrs\.|ms\.|dr\.|mr|mrs|ms|dr)\s+/i, '')
-      const reportNameParts = reportPatientName.split(" ").filter(Boolean)
-      const isMatch = reportNameParts.some((part: string) => accountPatientName.includes(part) && part.length > 2)
-      
-      if (!isMatch) {
+    // Remove header noise words from extracted report name if OCR captured header text
+    const cleanReportName = reportPatientName.replace(/\b(lab|no|ref|by|collected|sample|date|patient|name)\b/gi, '').trim()
+
+    if (cleanReportName && accountPatientName) {
+      const accountTokens = accountPatientName.split(/[\s\.]+/).filter((t: string) => t.length > 2)
+      const reportTokens = cleanReportName.split(/[\s\.]+/).filter((t: string) => t.length > 2)
+
+      // Match if any user name token (e.g., Sankalp or Verma) matches the report OR report token matches account
+      const isMatch = accountTokens.some((token: string) => cleanReportName.includes(token)) ||
+                      reportTokens.some((token: string) => accountPatientName.includes(token))
+
+      if (!isMatch && reportTokens.length > 0) {
         return NextResponse.json({ 
           error: `Identity mismatch. The report belongs to "${parsedData.patient_name || reportPatientName}", but this account belongs to "${session.user.name}". For security, this upload was blocked.` 
         }, { status: 403 })
