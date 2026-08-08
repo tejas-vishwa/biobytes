@@ -6,6 +6,7 @@ import { AlertCircle, FileText, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ShareCodeButton } from "./ShareCodeButton"
+import { DeleteReportButton } from "@/components/DeleteReportButton"
 
 export const dynamic = "force-dynamic"
 
@@ -206,6 +207,7 @@ export default async function PatientDashboard() {
                       >
                         View PDF
                       </a>
+                      <DeleteReportButton reportId={report.id} />
                     </div>
                   </div>
                 ))}

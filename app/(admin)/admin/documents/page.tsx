@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Search, FileText, CheckCircle, Clock, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { DeleteReportButton } from "@/components/DeleteReportButton"
 
 export const dynamic = "force-dynamic"
 
@@ -118,13 +119,16 @@ export default function AdminDocumentsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link 
-                          href={doc.fileUrl || "#"} 
-                          target="_blank"
-                          className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
-                        >
-                          View PDF
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link 
+                            href={doc.fileUrl || "#"} 
+                            target="_blank"
+                            className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+                          >
+                            View PDF
+                          </Link>
+                          <DeleteReportButton reportId={doc.id} onDeleted={() => setDocuments(docs => docs.filter(d => d.id !== doc.id))} />
+                        </div>
                       </td>
                     </tr>
                   ))
