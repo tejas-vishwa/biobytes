@@ -4,8 +4,16 @@ import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { seedDatabase } from "@/lib/seed-db"
 
+if (!process.env.NEXTAUTH_SECRET) {
+  process.env.NEXTAUTH_SECRET = "biobytes-production-secret-2026"
+}
+
+if (!process.env.NEXTAUTH_URL && process.env.VERCEL_URL) {
+  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`
+}
+
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET || "biobytes-production-secret-2026",
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days

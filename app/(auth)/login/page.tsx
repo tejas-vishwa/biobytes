@@ -69,7 +69,12 @@ export default function LoginPage() {
     }
 
     if (res?.error) {
-      setError("Demo account login failed. Please verify Turso environment variables in Vercel.")
+      console.error("Login attempt error:", res.error)
+      if (res.error === "CredentialsSignin") {
+        setError("Invalid demo credentials. Please try again.")
+      } else {
+        setError(`Login error (${res.error}). Please verify environment configuration.`)
+      }
       setLoading(false)
     } else {
       router.push(roleUrl)
