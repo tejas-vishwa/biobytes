@@ -246,18 +246,26 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
                         <YAxis 
                           domain={[
                             (dataMin: number) => {
-                              if (trend.refMin !== null) return Math.floor(Math.min(dataMin, trend.refMin * 0.9));
-                              return Math.floor(dataMin * 0.9);
+                              const minVal = isNaN(dataMin) || dataMin === Infinity || dataMin === -Infinity ? 0 : dataMin;
+                              if (trend.refMin !== null && trend.refMin !== undefined) {
+                                return Math.floor(Math.min(minVal, trend.refMin * 0.9));
+                              }
+                              return Math.max(0, Math.floor(minVal * 0.9));
                             },
                             (dataMax: number) => {
-                              if (trend.refMax !== null) return Math.ceil(Math.max(dataMax, trend.refMax * 1.1));
-                              return Math.ceil(dataMax * 1.1);
+                              const maxVal = isNaN(dataMax) || dataMax === Infinity || dataMax === -Infinity ? 100 : dataMax;
+                              if (trend.refMax !== null && trend.refMax !== undefined) {
+                                return Math.ceil(Math.max(maxVal, trend.refMax * 1.1));
+                              }
+                              return Math.ceil(maxVal * 1.1);
                             }
                           ]}
+                          tickFormatter={(val: number) => `${Math.round(Number(val))}`}
+                          allowDecimals={false}
                           tick={{ fontSize: 12, fill: '#6b7280' }}
                           axisLine={false}
                           tickLine={false}
-                          width={40}
+                          width={50}
                         />
                         <Tooltip 
                           content={({ active, payload }) => {
@@ -303,7 +311,7 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
                         <LineChart data={[{ id: 1, value: trend.refMax || 100 }, { id: 2, value: trend.refMin || 0 }]} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                           <XAxis dataKey="id" tick={false} axisLine={false} tickLine={false} />
-                          <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={40} />
+                          <YAxis domain={['auto', 'auto']} tickFormatter={(val: number) => `${Math.round(Number(val))}`} allowDecimals={false} tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={50} />
                           <Line type="monotone" dataKey="value" stroke="#9ca3af" strokeWidth={2} strokeDasharray="5 5" dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
