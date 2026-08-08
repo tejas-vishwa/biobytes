@@ -7,7 +7,7 @@ const DEFAULT_TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OD
 
 function getValidTursoUrl() {
   const raw = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || process.env.TURSO_URL
-  if (raw && raw !== 'undefined' && raw.trim() !== '') {
+  if (raw && raw !== 'undefined' && raw.trim() !== '' && !raw.includes('biobytes-tejas-vishwa')) {
     return raw
   }
   return DEFAULT_TURSO_URL
@@ -15,7 +15,7 @@ function getValidTursoUrl() {
 
 function getValidTursoToken() {
   const raw = process.env.TURSO_AUTH_TOKEN
-  if (raw && raw !== 'undefined' && raw.trim() !== '') {
+  if (raw && raw !== 'undefined' && raw.trim() !== '' && !raw.includes('eyJqdGkiOiJkT1NRT1pKOEVmR1pETXA3cHhTemZn') && !raw.includes('eyJhIjoicnciLCJpYXQiOjE3ODYxMzAyODY') && !raw.includes('eyJhIjoicnciLCJpYXQiOjE3ODYxMzExMDY')) {
     return raw
   }
   return DEFAULT_TURSO_TOKEN
