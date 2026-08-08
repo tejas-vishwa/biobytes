@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Calendar as CalendarIcon, Clock, ArrowLeft } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+
 export default function BookingPage() {
   const params = useParams()
   const router = useRouter()

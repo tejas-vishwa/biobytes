@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Shield, Bell, Key, Database, Save } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+
 export default function AdminSettingsPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

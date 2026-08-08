@@ -1,6 +1,8 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
+
+export const dynamic = "force-dynamic"
 import Link from "next/link"
 import { Activity, LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, HeartHandshake } from "lucide-react"
 import { BackButton } from "@/components/BackButton"

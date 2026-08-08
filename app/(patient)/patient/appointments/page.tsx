@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Calendar as CalendarIcon, Clock, User, CheckCircle2, Activity } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+
 function QueueStatusBadge({ appointmentId }: { appointmentId: string }) {
   const [position, setPosition] = useState<number | null>(null)
 

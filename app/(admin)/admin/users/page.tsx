@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, Ban, CheckCircle, Mail, MoreHorizontal } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)

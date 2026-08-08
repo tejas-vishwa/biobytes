@@ -3,6 +3,8 @@ import { authOptions } from "@/lib/auth"
 import { notFound } from "next/navigation"
 import AdminSidebar from "@/components/AdminSidebar"
 
+export const dynamic = "force-dynamic"
+
 export default async function AdminLayout({
   children,
 }: {

@@ -9,6 +9,8 @@ import { Stethoscope, QrCode } from "lucide-react"
 import { Html5QrcodeScanner } from "html5-qrcode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
+export const dynamic = "force-dynamic"
+
 export default function DoctorAccessPage() {
   const router = useRouter()
   const [code, setCode] = useState("")

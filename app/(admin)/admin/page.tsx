@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, FileText, Database, Activity, Calendar } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null)
   const [activities, setActivities] = useState<any[]>([])

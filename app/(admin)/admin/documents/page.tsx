@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Search, FileText, CheckCircle, Clock, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 export default function AdminDocumentsPage() {
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)

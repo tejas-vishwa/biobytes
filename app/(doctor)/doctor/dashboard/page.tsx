@@ -8,6 +8,8 @@ import { Calendar as CalendarIcon, Clock, User, QrCode, CheckCircle2 } from "luc
 import Link from "next/link"
 import { QRCodeSVG } from "qrcode.react"
 
+export const dynamic = "force-dynamic"
+
 export default function DoctorDashboardPage() {
   const { data: session } = useSession()
   const [appointments, setAppointments] = useState<any[]>([])

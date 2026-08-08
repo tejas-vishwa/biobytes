@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button"
 import { UploadCloud, FileText, Camera, X } from "lucide-react"
 
+export const dynamic = "force-dynamic"
+
 export default function UploadPage() {
   const router = useRouter()
   const [files, setFiles] = useState<File[]>([])
