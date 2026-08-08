@@ -179,51 +179,51 @@ export async function seedDatabase() {
     const biomarkers = await prisma.biomarkerDefinition.findMany()
 
     // Pre-computed valid bcrypt hashes for fast non-blocking execution:
-    // demo1234 -> $2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW
-    // admin1234 -> $2a$10$c1xO5P0J8d.Ld5R84zP9t.rJ7K/1234567890123456789012
-    const demoPasswordHash = "$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW"
-    const adminPasswordHash = "$2a$10$c1xO5P0J8d.Ld5R84zP9t.rJ7K/1234567890123456789012"
-    const superAdminPasswordHash = "$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW"
+    // demo1234 -> $2b$10$9Te2u47R.K/ggejiePt7m.h6FsxZ6n.QoRfeT8acNEIhVbn3qGoki
+    // admin1234 -> $2b$10$d2o0hvW48JawCXP1pVaUD.2TCfwqR8nDVbh148Vs3wFNREuxMYOKW
+    const demoPasswordHash = "$2b$10$9Te2u47R.K/ggejiePt7m.h6FsxZ6n.QoRfeT8acNEIhVbn3qGoki"
+    const adminPasswordHash = "$2b$10$d2o0hvW48JawCXP1pVaUD.2TCfwqR8nDVbh148Vs3wFNREuxMYOKW"
+    const superAdminPasswordHash = "$2b$10$9Te2u47R.K/ggejiePt7m.h6FsxZ6n.QoRfeT8acNEIhVbn3qGoki"
 
     const priya = await prisma.user.upsert({
       where: { email: "priya@demo.com" },
-      update: {},
+      update: { passwordHash: demoPasswordHash },
       create: { email: "priya@demo.com", passwordHash: demoPasswordHash, name: "Priya Sharma", role: "PATIENT" }
     })
 
     const sankalp = await prisma.user.upsert({
       where: { email: "sankalp@demo.com" },
-      update: {},
+      update: { passwordHash: demoPasswordHash },
       create: { email: "sankalp@demo.com", passwordHash: demoPasswordHash, name: "Sankalp Verma", role: "PATIENT" }
     })
 
     const utkarsh = await prisma.user.upsert({
       where: { email: "utkarsh@demo.com" },
-      update: {},
+      update: { passwordHash: demoPasswordHash },
       create: { email: "utkarsh@demo.com", passwordHash: demoPasswordHash, name: "Utkarsh Singh", role: "PATIENT" }
     })
 
     await prisma.user.upsert({
       where: { email: "tejas@demo.com" },
-      update: {},
+      update: { passwordHash: demoPasswordHash },
       create: { email: "tejas@demo.com", passwordHash: demoPasswordHash, name: "Tejas Vishwakarma", role: "PATIENT" }
     })
 
     await prisma.user.upsert({
       where: { email: "admin@biobytes.in" },
-      update: {},
+      update: { passwordHash: adminPasswordHash },
       create: { email: "admin@biobytes.in", passwordHash: adminPasswordHash, name: "Admin User", role: "ADMIN" }
     })
 
     await prisma.user.upsert({
       where: { email: "admin@teambiobytes.com" },
-      update: {},
+      update: { passwordHash: superAdminPasswordHash },
       create: { email: "admin@teambiobytes.com", passwordHash: superAdminPasswordHash, name: "Super Admin", role: "ADMIN" }
     })
 
     const doctor = await prisma.user.upsert({
       where: { email: "doctor@demo.com" },
-      update: {},
+      update: { passwordHash: demoPasswordHash },
       create: { email: "doctor@demo.com", passwordHash: demoPasswordHash, name: "Dr. Rahul Verma", role: "DOCTOR" }
     })
 
