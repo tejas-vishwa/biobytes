@@ -115,6 +115,19 @@ export async function GET(req: Request) {
     if (hr.vitamin_b12 !== null) pushLegacy("VITAMIN_B12", hr.vitamin_b12)
   })
 
+  const MAX_REALISTIC_VALUES: Record<string, number> = {
+    CHOLESTEROL_TOTAL: 600,
+    LDL: 400,
+    HDL: 200,
+    TRIGLYCERIDES: 1500,
+    HEMOGLOBIN: 30,
+    GLUCOSE_FASTING: 600,
+    TSH: 200,
+    VITAMIN_D: 300,
+    VITAMIN_B12: 3000,
+    HBA1C: 25,
+  }
+
   // 4. Clean and sort all histories
   const finalTrends = Object.values(trendsByCode).map((trend: any) => {
     // Deduplicate exact data points
@@ -129,8 +142,13 @@ export async function GET(req: Request) {
     // Sort chronologically
     trend.history.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
     
-    // Filter out data outside the requested timeframe
-    trend.history = trend.history.filter((d: any) => new Date(d.date) >= dateLimit)
+    // Filter out data outside the requested timeframe or unrealistic values
+    const maxAllowed = MAX_REALISTIC_VALUES[trend.code] || 5000
+    trend.history = trend.history.filter((d: any) => {
+      const validDate = new Date(d.date) >= dateLimit
+      const validValue = typeof d.value === 'number' && !isNaN(d.value) && d.value > 0 && d.value <= maxAllowed
+      return validDate && validValue
+    })
 
     return trend
   })

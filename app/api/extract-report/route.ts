@@ -150,14 +150,30 @@ export async function POST(req: Request) {
     let hr_vitamin_b12: number | null = null;
     let hr_calcium: number | null = null;
 
+    const MAX_REALISTIC_VALUES: Record<string, number> = {
+      CHOLESTEROL_TOTAL: 600,
+      LDL: 400,
+      HDL: 200,
+      TRIGLYCERIDES: 1500,
+      HEMOGLOBIN: 30,
+      GLUCOSE_FASTING: 600,
+      TSH: 200,
+      VITAMIN_D: 300,
+      VITAMIN_B12: 3000,
+      HBA1C: 25,
+      CALCIUM: 25,
+      ALBUMIN: 15,
+      CREATININE: 30,
+      URIC_ACID: 40,
+      PLATELETS: 2000,
+    }
+
     // Universal Dynamic Extraction Engine
     BIOMARKERS_100.forEach((b: any) => {
       // Create a flexible regex based on the biomarker's name
-      // e.g., for "Total Cholesterol", we look for "Total Cholesterol" followed by any characters, then a number.
-      // We safely escape the biomarker name.
       const safeName = b.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       
-      // Some special cases for robust matching (e.g., abbreviations)
+      // Some special cases for robust matching
       let patterns = [new RegExp(`(?:${safeName})[^\\d]{0,40}?([\\d\\.]+)`, 'i')];
       
       if (b.code === 'HEMOGLOBIN') patterns.push(/(?:hb|haemoglobin)[^\d]{0,40}?([\d\.]+)/i);
@@ -169,14 +185,26 @@ export async function POST(req: Request) {
       for (const regex of patterns) {
         const match = extractedText.match(regex);
         if (match && match[1]) {
-          const value = parseFloat(match[1]);
-          if (!isNaN(value)) {
+          let value = parseFloat(match[1]);
+          const maxAllowed = MAX_REALISTIC_VALUES[b.code] || 5000;
+          
+          // Fix concatenated numbers like 200134 -> 134
+          if (value > maxAllowed && value.toString().length >= 5) {
+            const strVal = value.toString();
+            const trailingVal = parseFloat(strVal.slice(-3));
+            if (!isNaN(trailingVal) && trailingVal <= maxAllowed) {
+              value = trailingVal;
+            }
+          }
+
+          if (!isNaN(value) && value <= maxAllowed) {
+            const isAbnormal = (b.refMin !== null && value < b.refMin) || (b.refMax !== null && value > b.refMax);
             parsedData.biomarkers.push({
               name: b.name,
               code: b.code,
               value,
               unit: b.unit,
-              isAbnormal: false
+              isAbnormal
             });
             matchedValue = value;
             break;
