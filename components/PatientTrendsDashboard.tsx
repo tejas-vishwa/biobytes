@@ -58,7 +58,39 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        logging: false
+        logging: false,
+        onclone: (clonedDoc) => {
+          const clonedCard = clonedDoc.getElementById(`card-${code}`)
+          if (clonedCard) {
+            clonedCard.style.width = '600px'
+            clonedCard.style.height = '360px'
+            clonedCard.style.position = 'static'
+            clonedCard.style.display = 'block'
+            clonedCard.style.visibility = 'visible'
+
+            const responsiveContainers = clonedCard.querySelectorAll('.recharts-responsive-container')
+            responsiveContainers.forEach((rc: any) => {
+              rc.style.width = '550px'
+              rc.style.height = '260px'
+              rc.style.minWidth = '550px'
+              rc.style.minHeight = '260px'
+            })
+
+            const wrapperContainers = clonedCard.querySelectorAll('.recharts-wrapper')
+            wrapperContainers.forEach((wc: any) => {
+              wc.style.width = '550px'
+              wc.style.height = '260px'
+            })
+
+            const svgs = clonedCard.querySelectorAll('svg')
+            svgs.forEach((svg: any) => {
+              svg.setAttribute('width', '550')
+              svg.setAttribute('height', '260')
+              svg.style.width = '550px'
+              svg.style.height = '260px'
+            })
+          }
+        }
       })
       const imgData = canvas.toDataURL('image/png')
       const link = document.createElement('a')
@@ -143,11 +175,43 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
 
         try {
           const canvas = await html2canvas(cardEl, {
-            scale: 1.5,
+            scale: 2,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: false
+            logging: false,
+            onclone: (clonedDoc) => {
+              const clonedCard = clonedDoc.getElementById(`card-${trend.code}`)
+              if (clonedCard) {
+                clonedCard.style.width = '600px'
+                clonedCard.style.height = '360px'
+                clonedCard.style.position = 'static'
+                clonedCard.style.display = 'block'
+                clonedCard.style.visibility = 'visible'
+
+                const responsiveContainers = clonedCard.querySelectorAll('.recharts-responsive-container')
+                responsiveContainers.forEach((rc: any) => {
+                  rc.style.width = '550px'
+                  rc.style.height = '260px'
+                  rc.style.minWidth = '550px'
+                  rc.style.minHeight = '260px'
+                })
+
+                const wrapperContainers = clonedCard.querySelectorAll('.recharts-wrapper')
+                wrapperContainers.forEach((wc: any) => {
+                  wc.style.width = '550px'
+                  wc.style.height = '260px'
+                })
+
+                const svgs = clonedCard.querySelectorAll('svg')
+                svgs.forEach((svg: any) => {
+                  svg.setAttribute('width', '550')
+                  svg.setAttribute('height', '260')
+                  svg.style.width = '550px'
+                  svg.style.height = '260px'
+                })
+              }
+            }
           })
           const imgData = canvas.toDataURL('image/png')
           
