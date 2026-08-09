@@ -247,21 +247,29 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
                           domain={[
                             (dataMin: number) => {
                               const minVal = isNaN(dataMin) || dataMin === Infinity || dataMin === -Infinity ? 0 : dataMin;
+                              let minBound = minVal;
                               if (trend.refMin !== null && trend.refMin !== undefined) {
-                                return Math.floor(Math.min(minVal, trend.refMin * 0.9));
+                                minBound = Math.min(minVal, trend.refMin);
                               }
-                              return Math.max(0, Math.floor(minVal * 0.9));
+                              if (minBound >= 0 && minBound <= 30) {
+                                return 0;
+                              }
+                              return Math.max(0, Math.floor(minBound * 0.85));
                             },
                             (dataMax: number) => {
-                              const maxVal = isNaN(dataMax) || dataMax === Infinity || dataMax === -Infinity ? 100 : dataMax;
+                              const maxVal = isNaN(dataMax) || dataMax === Infinity || dataMax === -Infinity ? 10 : dataMax;
+                              let maxBound = maxVal;
                               if (trend.refMax !== null && trend.refMax !== undefined) {
-                                return Math.ceil(Math.max(maxVal, trend.refMax * 1.1));
+                                maxBound = Math.max(maxVal, trend.refMax);
                               }
-                              return Math.ceil(maxVal * 1.1);
+                              return Math.ceil(Math.max(maxBound * 1.15, maxBound + 2));
                             }
                           ]}
-                          tickFormatter={(val: number) => `${Math.round(Number(val))}`}
-                          allowDecimals={false}
+                          tickFormatter={(val: number) => {
+                            if (isNaN(val)) return ''
+                            const num = Number(val)
+                            return Number.isInteger(num) ? num.toString() : num.toFixed(1)
+                          }}
                           tick={{ fontSize: 12, fill: '#6b7280' }}
                           axisLine={false}
                           tickLine={false}

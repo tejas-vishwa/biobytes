@@ -133,7 +133,7 @@ export const BIOMARKERS_100: BiomarkerDef[] = [
   { name: 'CEA', code: 'CEA', category: 'Hormones & Others', unit: 'ng/mL', refMin: 0, refMax: 3.0 },
   { name: 'Rheumatoid Factor', code: 'RA_FACTOR', category: 'Hormones & Others', unit: 'IU/mL', refMin: 0, refMax: 14 },
   { name: 'Anti-CCP', code: 'ANTI_CCP', category: 'Hormones & Others', unit: 'U/mL', refMin: 0, refMax: 20 },
-  { name: 'ANA', code: 'ANA', category: 'Hormones & Others', unit: 'Titer', refMin: null, refMax: null },
+  { name: 'ANA', code: 'ANA', category: 'Hormones & Others', unit: 'IU/mL', refMin: 0, refMax: 20 },
   { name: 'IgE Total', code: 'IGE', category: 'Hormones & Others', unit: 'IU/mL', refMin: 0, refMax: 100 },
   { name: 'Serum Amylase', code: 'AMYLASE', category: 'Hormones & Others', unit: 'U/L', refMin: 28, refMax: 100 },
   { name: 'Serum Lipase', code: 'LIPASE', category: 'Hormones & Others', unit: 'U/L', refMin: 13, refMax: 60 }
