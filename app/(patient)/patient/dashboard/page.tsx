@@ -57,6 +57,7 @@ export default async function PatientDashboard() {
   let patientSummaryText = "Based on your recent lab reports from the last 90 days, all your tracked biomarkers are currently within standard reference ranges."
 
   latestMetricsMap.forEach(m => {
+    const unit = (m.unit === 'Titer' || m.biomarker?.code === 'ANA') ? 'IU/mL' : m.unit
     if (m.refMin !== null && m.refMax !== null) {
       const range = m.refMax - m.refMin
       const criticalThreshold = range * 0.15 // 15% deviation for CRITICAL
@@ -71,14 +72,14 @@ export default async function PatientDashboard() {
         overallStatus = "CRITICAL"
         criticalAlerts.push({
           test_name: m.biomarker.displayName,
-          result: `${m.value} ${m.unit}`,
+          result: `${m.value} ${unit}`,
           urgent_warning: `URGENT: Your ${m.biomarker.displayName} is critically ${isCriticalLow ? 'low' : 'high'}. Please consult a doctor immediately.`
         })
       } else if (isLow || isHigh) {
         if (overallStatus !== "CRITICAL") overallStatus = "ATTENTION_NEEDED"
         standardIssues.push({
           test_name: m.biomarker.displayName,
-          result: `${m.value} ${m.unit}`,
+          result: `${m.value} ${unit}`,
           advice: `Your ${m.biomarker.displayName} is slightly ${isLow ? 'low' : 'high'}. Discuss this at your next checkup.`
         })
       }
@@ -86,7 +87,7 @@ export default async function PatientDashboard() {
       if (overallStatus !== "CRITICAL") overallStatus = "ATTENTION_NEEDED"
       standardIssues.push({
         test_name: m.biomarker.displayName,
-        result: `${m.value} ${m.unit}`,
+        result: `${m.value} ${unit}`,
         advice: `Your ${m.biomarker.displayName} is flagged as abnormal. Discuss this at your next checkup.`
       })
     }

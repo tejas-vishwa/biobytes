@@ -75,18 +75,21 @@ export default async function DoctorPatientView({ params }: { params: Promise<{ 
               <p className="text-muted-foreground">No abnormal biomarkers found.</p>
             ) : (
               <ul className="space-y-3">
-                {metrics.filter(m => m.isAbnormal).map(m => (
-                  <li key={m.id} className="flex justify-between items-center border-b pb-2 last:border-0">
-                    <div>
-                      <span className="font-medium">{m.biomarker.displayName}</span>
-                      <p className="text-xs text-muted-foreground">{new Date(m.report.reportDate!).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-bold text-destructive">{m.value} {m.unit}</span>
-                      <p className="text-xs text-muted-foreground">Ref: {m.refMin}-{m.refMax}</p>
-                    </div>
-                  </li>
-                ))}
+                {metrics.filter(m => m.isAbnormal).map(m => {
+                  const unit = (m.unit === 'Titer' || m.biomarker?.code === 'ANA') ? 'IU/mL' : m.unit
+                  return (
+                    <li key={m.id} className="flex justify-between items-center border-b pb-2 last:border-0">
+                      <div>
+                        <span className="font-medium">{m.biomarker.displayName}</span>
+                        <p className="text-xs text-muted-foreground">{new Date(m.report.reportDate!).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-destructive">{m.value} {unit}</span>
+                        <p className="text-xs text-muted-foreground">Ref: {m.refMin}-{m.refMax}</p>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </CardContent>

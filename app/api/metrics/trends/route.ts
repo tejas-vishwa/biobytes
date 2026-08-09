@@ -53,6 +53,20 @@ export async function GET(req: Request) {
     }
   })
 
+  // Auto-heal database records for ANA to update legacy 'Titer' units to 'IU/mL'
+  try {
+    await prisma.biomarkerDefinition.updateMany({
+      where: { code: 'ANA', unit: { in: ['Titer', 'titer', ''] } },
+      data: { unit: 'IU/mL', refMin: 0, refMax: 20 }
+    })
+    await prisma.extractedMetric.updateMany({
+      where: { biomarker: { code: 'ANA' }, unit: { in: ['Titer', 'titer', ''] } },
+      data: { unit: 'IU/mL', refMin: 0, refMax: 20 }
+    })
+  } catch (e) {
+    // Ignore non-fatal database sync errors
+  }
+
   // 2. Fetch data from ExtractedMetric
   const metrics = await prisma.extractedMetric.findMany({
     where: {
