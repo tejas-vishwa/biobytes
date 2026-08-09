@@ -54,8 +54,9 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
     if (!cardEl) return
     try {
       const canvas = await html2canvas(cardEl, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false
       })
@@ -63,10 +64,12 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       const link = document.createElement('a')
       link.download = `BioBytes_${name.replace(/[^a-zA-Z0-9]/g, '_')}_Trend.png`
       link.href = imgData
+      document.body.appendChild(link)
       link.click()
-    } catch (err) {
+      document.body.removeChild(link)
+    } catch (err: any) {
       console.error("Graph download failed:", err)
-      alert("Failed to download graph image.")
+      alert(`Failed to download graph: ${err?.message || "Error capturing chart"}`)
     }
   }
 
@@ -75,106 +78,117 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
     try {
       const populatedTrends = trends.filter(t => t.history && t.history.length > 0)
       
-      const res = await fetch('/api/generate-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metrics: populatedTrends })
-      })
-      const data = await res.json()
-      const aiSummary = data.summary || "All tracked health metrics are within standard ranges."
+      let aiSummary = "Based on your recent lab reports, here is an automated clinical summary of your health trends."
+      try {
+        const res = await fetch('/api/generate-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metrics: populatedTrends })
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.summary) aiSummary = data.summary
+        }
+      } catch (e) {
+        console.warn("Summary fetch note:", e)
+      }
 
       const doc = new jsPDF('p', 'mm', 'a4')
       const pageWidth = doc.internal.pageSize.getWidth()
       const pageHeight = doc.internal.pageSize.getHeight()
 
       // Header Banner
-      doc.setFillColor(13, 148, 136) // Teal primary
-      doc.rect(0, 0, pageWidth, 25, 'F')
+      doc.setFillColor(13, 148, 136)
+      doc.rect(0, 0, pageWidth, 24, 'F')
       doc.setFont("helvetica", "bold")
-      doc.setFontSize(18)
+      doc.setFontSize(16)
       doc.setTextColor(255, 255, 255)
-      doc.text("BioBytes e-Health Tracker", 14, 16)
+      doc.text("BioBytes e-Health Tracker", 14, 15)
       
-      doc.setFontSize(10)
+      doc.setFontSize(9)
       doc.setFont("helvetica", "normal")
-      doc.text(`Generated: ${new Date().toLocaleDateString()} | Timeframe: Last ${months} Months`, pageWidth - 14, 16, { align: "right" })
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - 14, 15, { align: "right" })
 
       // AI Clinical Summary Box
-      doc.setFontSize(13)
+      doc.setFontSize(12)
       doc.setFont("helvetica", "bold")
       doc.setTextColor(15, 23, 42)
-      doc.text("AI Doctor Health Summary", 14, 34)
+      doc.text("AI Doctor Health Summary", 14, 32)
 
       doc.setFillColor(248, 250, 252)
       doc.setDrawColor(226, 232, 240)
       
       const splitSummary = doc.splitTextToSize(aiSummary, pageWidth - 36)
-      const summaryBoxHeight = Math.max(20, (splitSummary.length * 5) + 8)
+      const summaryBoxHeight = Math.max(16, (splitSummary.length * 4.5) + 6)
       
-      doc.roundedRect(14, 38, pageWidth - 28, summaryBoxHeight, 3, 3, 'FD')
-      doc.setFontSize(9.5)
+      doc.rect(14, 36, pageWidth - 28, summaryBoxHeight, 'FD')
+      doc.setFontSize(9)
       doc.setFont("helvetica", "normal")
       doc.setTextColor(51, 65, 85)
-      doc.text(splitSummary, 18, 45)
+      doc.text(splitSummary, 18, 42)
 
-      let currentY = 38 + summaryBoxHeight + 12
+      let currentY = 36 + summaryBoxHeight + 10
 
-      doc.setFontSize(13)
+      doc.setFontSize(12)
       doc.setFont("helvetica", "bold")
       doc.setTextColor(15, 23, 42)
       doc.text("Tracked Biomarker Trends", 14, currentY)
       currentY += 6
 
-      // Capture individual chart cards cleanly
+      // Capture individual chart cards cleanly with per-card fallback
       for (let i = 0; i < filteredTrends.length; i++) {
         const trend = filteredTrends[i]
         const cardEl = document.getElementById(`card-${trend.code}`)
         if (!cardEl) continue
 
-        const canvas = await html2canvas(cardEl, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          logging: false
-        })
-        const imgData = canvas.toDataURL('image/png')
-        
-        const cardWidth = (pageWidth - 36) / 2
-        const cardHeight = 68
+        try {
+          const canvas = await html2canvas(cardEl, {
+            scale: 1.5,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false
+          })
+          const imgData = canvas.toDataURL('image/png')
+          
+          const cardWidth = (pageWidth - 36) / 2
+          const cardHeight = 65
 
-        // Calculate positions for 2-column grid layout
-        const isSecondColumn = i % 2 === 1
-        const xPos = isSecondColumn ? 14 + cardWidth + 8 : 14
-        
-        if (!isSecondColumn && i > 0) {
-          currentY += cardHeight + 8
+          const isSecondColumn = i % 2 === 1
+          const xPos = isSecondColumn ? 14 + cardWidth + 8 : 14
+          
+          if (!isSecondColumn && i > 0) {
+            currentY += cardHeight + 6
+          }
+
+          if (currentY + cardHeight > pageHeight - 18) {
+            doc.addPage()
+            currentY = 18
+          }
+
+          doc.addImage(imgData, 'PNG', xPos, currentY, cardWidth, cardHeight)
+        } catch (cardErr) {
+          console.warn(`Could not capture card ${trend.code}:`, cardErr)
         }
-
-        if (currentY + cardHeight > pageHeight - 20) {
-          doc.addPage()
-          currentY = 20
-        }
-
-        doc.addImage(imgData, 'PNG', xPos, currentY, cardWidth, cardHeight)
       }
 
-      // Footer
+      // Footer with page numbering
       const totalPages = doc.getNumberOfPages()
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p)
         doc.setFontSize(8)
         doc.setTextColor(148, 163, 184)
         doc.text(
-          "BioBytes e-Health Report • Confidential • This report does not replace professional medical advice.", 
+          "BioBytes e-Health Report • Confidential • Does not replace professional medical advice.", 
           14, pageHeight - 8
         )
         doc.text(`Page ${p} of ${totalPages}`, pageWidth - 14, pageHeight - 8, { align: "right" })
       }
 
       doc.save(`BioBytes_Health_Trends_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
-    } catch (err) {
+    } catch (err: any) {
       console.error("PDF generation failed:", err)
-      alert("Failed to generate PDF. Please try again.")
+      alert(`PDF Generation Note: ${err?.message || "Failed to generate PDF. Please try again."}`)
     } finally {
       setGeneratingPdf(false)
     }
