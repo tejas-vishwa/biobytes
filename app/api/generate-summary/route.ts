@@ -24,11 +24,13 @@ export async function POST(req: Request) {
     let abnormalCount = 0;
     
     metrics.forEach((m: any) => {
-       if (m.data && m.data.length > 0) {
-         const latest = m.data[m.data.length - 1]
-         if (latest.isAbnormal || (m.refMin !== null && latest.value < m.refMin) || (m.refMax !== null && latest.value > m.refMax)) {
+       const points = m.history || m.data || []
+       if (points.length > 0) {
+         const latest = points[points.length - 1]
+         const isAbnormal = latest.isAbnormal || (m.refMin !== null && latest.value < m.refMin) || (m.refMax !== null && latest.value > m.refMax)
+         if (isAbnormal) {
             abnormalCount++;
-            summary += `- Your ${m.name} is currently out of range (${latest.value} ${m.unit}).\n`
+            summary += `• ${m.name}: ${latest.value} ${m.unit} (Reference Range: ${m.refMin ?? 'N/A'} - ${m.refMax ?? 'N/A'} ${m.unit})\n`
          } else {
             normalCount++;
          }
@@ -38,9 +40,9 @@ export async function POST(req: Request) {
     if (abnormalCount === 0 && normalCount > 0) {
       summary += "Great news! All your tracked biomarkers are currently within standard reference ranges.\n"
     } else if (abnormalCount > 0) {
-      summary += `\nWe detected ${abnormalCount} biomarker(s) outside of standard ranges. Please consult with your primary care physician to discuss these results.`
+      summary += `\nWe detected ${abnormalCount} biomarker(s) outside of standard ranges. Please consult with your physician to discuss these results.`
     } else {
-      summary += "Not enough data to determine trends."
+      summary += "Not enough historical data to calculate health trends."
     }
 
     return NextResponse.json({ summary })

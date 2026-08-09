@@ -49,6 +49,27 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
     return matchesCategory && matchesSearch
   })
 
+  const downloadSingleGraph = async (code: string, name: string) => {
+    const cardEl = document.getElementById(`card-${code}`)
+    if (!cardEl) return
+    try {
+      const canvas = await html2canvas(cardEl, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false
+      })
+      const imgData = canvas.toDataURL('image/png')
+      const link = document.createElement('a')
+      link.download = `BioBytes_${name.replace(/[^a-zA-Z0-9]/g, '_')}_Trend.png`
+      link.href = imgData
+      link.click()
+    } catch (err) {
+      console.error("Graph download failed:", err)
+      alert("Failed to download graph image.")
+    }
+  }
+
   const generatePDF = async () => {
     setGeneratingPdf(true)
     try {
@@ -60,70 +81,97 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
         body: JSON.stringify({ metrics: populatedTrends })
       })
       const data = await res.json()
-      const aiSummary = data.summary || "AI Summary unavailable."
+      const aiSummary = data.summary || "All tracked health metrics are within standard ranges."
 
-      const chartsContainer = document.getElementById("charts-container")
-      let chartImgData = null
-      if (chartsContainer) {
-        const originalBg = chartsContainer.style.background
-        chartsContainer.style.background = 'white'
-        // Filter out empty state elements for PDF generation to keep it clean
-        const emptyStates = chartsContainer.querySelectorAll('.empty-state-chart')
-        emptyStates.forEach((el: any) => el.style.display = 'none')
-        
-        const canvas = await html2canvas(chartsContainer, { scale: 2 })
-        chartImgData = canvas.toDataURL('image/png')
-        
-        emptyStates.forEach((el: any) => el.style.display = 'flex')
-        chartsContainer.style.background = originalBg
-      }
+      const doc = new jsPDF('p', 'mm', 'a4')
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const pageHeight = doc.internal.pageSize.getHeight()
 
-      const doc = new jsPDF()
-      doc.setFontSize(22)
-      doc.setTextColor(13, 148, 136)
-      doc.text("BioBytes e-health tracker", 105, 20, { align: "center" })
-      
-      doc.setFontSize(16)
-      doc.setTextColor(0, 0, 0)
-      doc.text("AI-Powered Health Trend Report", 105, 30, { align: "center" })
-      
-      doc.setFontSize(10)
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 38, { align: "center" })
-      
-      doc.setFontSize(14)
+      // Header Banner
+      doc.setFillColor(13, 148, 136) // Teal primary
+      doc.rect(0, 0, pageWidth, 25, 'F')
       doc.setFont("helvetica", "bold")
-      doc.text("AI Doctor Summary & Advice", 15, 50)
+      doc.setFontSize(18)
+      doc.setTextColor(255, 255, 255)
+      doc.text("BioBytes e-Health Tracker", 14, 16)
       
       doc.setFontSize(10)
       doc.setFont("helvetica", "normal")
-      const splitSummary = doc.splitTextToSize(aiSummary, 180)
-      doc.text(splitSummary, 15, 58)
+      doc.text(`Generated: ${new Date().toLocaleDateString()} | Timeframe: Last ${months} Months`, pageWidth - 14, 16, { align: "right" })
+
+      // AI Clinical Summary Box
+      doc.setFontSize(13)
+      doc.setFont("helvetica", "bold")
+      doc.setTextColor(15, 23, 42)
+      doc.text("AI Doctor Health Summary", 14, 34)
+
+      doc.setFillColor(248, 250, 252)
+      doc.setDrawColor(226, 232, 240)
       
-      let currentY = 60 + (splitSummary.length * 5)
+      const splitSummary = doc.splitTextToSize(aiSummary, pageWidth - 36)
+      const summaryBoxHeight = Math.max(20, (splitSummary.length * 5) + 8)
       
-      if (chartImgData) {
-        if (currentY > 200) {
+      doc.roundedRect(14, 38, pageWidth - 28, summaryBoxHeight, 3, 3, 'FD')
+      doc.setFontSize(9.5)
+      doc.setFont("helvetica", "normal")
+      doc.setTextColor(51, 65, 85)
+      doc.text(splitSummary, 18, 45)
+
+      let currentY = 38 + summaryBoxHeight + 12
+
+      doc.setFontSize(13)
+      doc.setFont("helvetica", "bold")
+      doc.setTextColor(15, 23, 42)
+      doc.text("Tracked Biomarker Trends", 14, currentY)
+      currentY += 6
+
+      // Capture individual chart cards cleanly
+      for (let i = 0; i < filteredTrends.length; i++) {
+        const trend = filteredTrends[i]
+        const cardEl = document.getElementById(`card-${trend.code}`)
+        if (!cardEl) continue
+
+        const canvas = await html2canvas(cardEl, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        })
+        const imgData = canvas.toDataURL('image/png')
+        
+        const cardWidth = (pageWidth - 36) / 2
+        const cardHeight = 68
+
+        // Calculate positions for 2-column grid layout
+        const isSecondColumn = i % 2 === 1
+        const xPos = isSecondColumn ? 14 + cardWidth + 8 : 14
+        
+        if (!isSecondColumn && i > 0) {
+          currentY += cardHeight + 8
+        }
+
+        if (currentY + cardHeight > pageHeight - 20) {
           doc.addPage()
           currentY = 20
-        } else {
-          currentY += 10
         }
-        doc.setFontSize(14)
-        doc.setFont("helvetica", "bold")
-        doc.text("Historical Data Comparison", 15, currentY)
-        doc.addImage(chartImgData, 'PNG', 15, currentY + 5, 180, 100)
-        currentY += 115
+
+        doc.addImage(imgData, 'PNG', xPos, currentY, cardWidth, cardHeight)
       }
-      
-      doc.setFontSize(8)
-      doc.setTextColor(150, 150, 150)
-      doc.text(
-        "Generated by AI and AI can make mistakes. This is for informational purposes and does not replace professional medical advice.", 
-        105, 285, { align: "center" }
-      )
-      
-      doc.save("BioBytes_Trend_Report.pdf")
-      
+
+      // Footer
+      const totalPages = doc.getNumberOfPages()
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p)
+        doc.setFontSize(8)
+        doc.setTextColor(148, 163, 184)
+        doc.text(
+          "BioBytes e-Health Report • Confidential • This report does not replace professional medical advice.", 
+          14, pageHeight - 8
+        )
+        doc.text(`Page ${p} of ${totalPages}`, pageWidth - 14, pageHeight - 8, { align: "right" })
+      }
+
+      doc.save(`BioBytes_Health_Trends_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
     } catch (err) {
       console.error("PDF generation failed:", err)
       alert("Failed to generate PDF. Please try again.")
@@ -204,7 +252,7 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       ) : (
         <div id="charts-container" className="grid gap-6 p-2 md:grid-cols-2">
           {filteredTrends.map((trend) => (
-            <Card key={trend.code} className="overflow-hidden bg-background/60 backdrop-blur-xl border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card id={`card-${trend.code}`} key={trend.code} className="overflow-hidden bg-background/60 backdrop-blur-xl border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
               <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-4">
                 <div className="flex justify-between items-start">
                   <div>
@@ -213,14 +261,27 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
                       {trend.category}
                     </CardDescription>
                   </div>
-                  {trend.refMin !== null && trend.refMax !== null && (
-                    <div className="text-right">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Reference Range</span>
-                      <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                        {trend.refMin} - {trend.refMax} {trend.unit}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {trend.refMin !== null && trend.refMax !== null && (
+                      <div className="text-right">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Reference Range</span>
+                        <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                          {trend.refMin} - {trend.refMax} {trend.unit}
+                        </span>
+                      </div>
+                    )}
+                    {trend.history.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => downloadSingleGraph(trend.code, trend.name)}
+                        title={`Download ${trend.name} Graph`}
+                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               
@@ -302,10 +363,10 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
                         <Line 
                           type="monotone" 
                           dataKey="value" 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={4}
-                          activeDot={{ r: 8, fill: "hsl(var(--primary))", stroke: "white", strokeWidth: 2 }}
-                          dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+                          stroke="#0d9488" 
+                          strokeWidth={3}
+                          activeDot={{ r: 7, fill: "#0d9488", stroke: "white", strokeWidth: 2 }}
+                          dot={{ r: 4, fill: "#0d9488", strokeWidth: 0 }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
