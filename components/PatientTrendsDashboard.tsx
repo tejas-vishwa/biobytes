@@ -49,49 +49,85 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
     return matchesCategory && matchesSearch
   })
 
-  const downloadSingleGraph = async (code: string, name: string) => {
-    const cardEl = document.getElementById(`card-${code}`)
-    if (!cardEl) return
+  const captureCardCanvas = async (cardEl: HTMLElement): Promise<HTMLCanvasElement | null> => {
+    const wrapper = document.createElement('div')
+    wrapper.style.position = 'fixed'
+    wrapper.style.top = '-9999px'
+    wrapper.style.left = '-9999px'
+    wrapper.style.width = '640px'
+    wrapper.style.height = '360px'
+    wrapper.style.zIndex = '-9999'
+    wrapper.style.background = '#ffffff'
+    wrapper.style.overflow = 'hidden'
+    wrapper.style.borderRadius = '16px'
+
+    const clone = cardEl.cloneNode(true) as HTMLElement
+    clone.style.width = '640px'
+    clone.style.height = '360px'
+    clone.style.background = '#ffffff'
+    clone.style.color = '#0f172a'
+    clone.style.margin = '0'
+    clone.style.padding = '16px'
+    clone.style.boxSizing = 'border-box'
+
+    const downloadBtns = clone.querySelectorAll('button')
+    downloadBtns.forEach(btn => btn.remove())
+
+    const responsiveContainers = clone.querySelectorAll('.recharts-responsive-container')
+    responsiveContainers.forEach((rc: any) => {
+      rc.style.width = '600px'
+      rc.style.height = '260px'
+      rc.style.minWidth = '600px'
+      rc.style.minHeight = '260px'
+    })
+
+    const wrapperContainers = clone.querySelectorAll('.recharts-wrapper')
+    wrapperContainers.forEach((wc: any) => {
+      wc.style.width = '600px'
+      wc.style.height = '260px'
+    })
+
+    const svgs = clone.querySelectorAll('svg')
+    svgs.forEach((svg: any) => {
+      svg.setAttribute('width', '600')
+      svg.setAttribute('height', '260')
+      svg.style.width = '600px'
+      svg.style.height = '260px'
+    })
+
+    wrapper.appendChild(clone)
+    document.body.appendChild(wrapper)
+
+    await new Promise(r => setTimeout(r, 60))
+
     try {
-      const canvas = await html2canvas(cardEl, {
+      const canvas = await html2canvas(wrapper, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        logging: false,
-        onclone: (clonedDoc) => {
-          const clonedCard = clonedDoc.getElementById(`card-${code}`)
-          if (clonedCard) {
-            clonedCard.style.width = '600px'
-            clonedCard.style.height = '360px'
-            clonedCard.style.position = 'static'
-            clonedCard.style.display = 'block'
-            clonedCard.style.visibility = 'visible'
-
-            const responsiveContainers = clonedCard.querySelectorAll('.recharts-responsive-container')
-            responsiveContainers.forEach((rc: any) => {
-              rc.style.width = '550px'
-              rc.style.height = '260px'
-              rc.style.minWidth = '550px'
-              rc.style.minHeight = '260px'
-            })
-
-            const wrapperContainers = clonedCard.querySelectorAll('.recharts-wrapper')
-            wrapperContainers.forEach((wc: any) => {
-              wc.style.width = '550px'
-              wc.style.height = '260px'
-            })
-
-            const svgs = clonedCard.querySelectorAll('svg')
-            svgs.forEach((svg: any) => {
-              svg.setAttribute('width', '550')
-              svg.setAttribute('height', '260')
-              svg.style.width = '550px'
-              svg.style.height = '260px'
-            })
-          }
-        }
+        logging: false
       })
+      if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper)
+      }
+      return canvas
+    } catch (err) {
+      if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper)
+      }
+      console.error("Card capture error:", err)
+      return null
+    }
+  }
+
+  const downloadSingleGraph = async (code: string, name: string) => {
+    const cardEl = document.getElementById(`card-${code}`)
+    if (!cardEl) return
+    try {
+      const canvas = await captureCardCanvas(cardEl)
+      if (!canvas) throw new Error("Could not render chart canvas")
+      
       const imgData = canvas.toDataURL('image/png')
       const link = document.createElement('a')
       link.download = `BioBytes_${name.replace(/[^a-zA-Z0-9]/g, '_')}_Trend.png`
@@ -167,52 +203,16 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       doc.text("Tracked Biomarker Trends", 14, currentY)
       currentY += 6
 
-      // Capture individual chart cards cleanly with per-card fallback
+      // Capture individual chart cards cleanly with live DOM appended container
       for (let i = 0; i < filteredTrends.length; i++) {
         const trend = filteredTrends[i]
         const cardEl = document.getElementById(`card-${trend.code}`)
         if (!cardEl) continue
 
         try {
-          const canvas = await html2canvas(cardEl, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            onclone: (clonedDoc) => {
-              const clonedCard = clonedDoc.getElementById(`card-${trend.code}`)
-              if (clonedCard) {
-                clonedCard.style.width = '600px'
-                clonedCard.style.height = '360px'
-                clonedCard.style.position = 'static'
-                clonedCard.style.display = 'block'
-                clonedCard.style.visibility = 'visible'
+          const canvas = await captureCardCanvas(cardEl)
+          if (!canvas) continue
 
-                const responsiveContainers = clonedCard.querySelectorAll('.recharts-responsive-container')
-                responsiveContainers.forEach((rc: any) => {
-                  rc.style.width = '550px'
-                  rc.style.height = '260px'
-                  rc.style.minWidth = '550px'
-                  rc.style.minHeight = '260px'
-                })
-
-                const wrapperContainers = clonedCard.querySelectorAll('.recharts-wrapper')
-                wrapperContainers.forEach((wc: any) => {
-                  wc.style.width = '550px'
-                  wc.style.height = '260px'
-                })
-
-                const svgs = clonedCard.querySelectorAll('svg')
-                svgs.forEach((svg: any) => {
-                  svg.setAttribute('width', '550')
-                  svg.setAttribute('height', '260')
-                  svg.style.width = '550px'
-                  svg.style.height = '260px'
-                })
-              }
-            }
-          })
           const imgData = canvas.toDataURL('image/png')
           
           const cardWidth = (pageWidth - 36) / 2
