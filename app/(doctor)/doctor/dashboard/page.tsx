@@ -149,9 +149,9 @@ export default function DoctorDashboardPage() {
                     </div>
                     
                     {appt.accessCode && appt.status === "ACCEPTED" && (
-                      <div className="mt-3 bg-slate-50 text-slate-700 text-sm px-4 py-3 rounded-md flex items-center justify-between border">
+                      <div className="mt-3 bg-muted/60 text-foreground text-sm px-4 py-3 rounded-lg flex items-center justify-between border border-border">
                         <div className="flex items-center">
-                          PIN provided: <strong className="ml-2 tracking-widest text-emerald-700 text-lg">{appt.accessCode}</strong>
+                          PIN provided: <strong className="ml-2 tracking-widest text-emerald-500 text-lg">{appt.accessCode}</strong>
                         </div>
                         <Link href={`/doctor/access?code=${appt.accessCode}`}>
                           <Button variant="outline" size="sm" className="h-auto">
@@ -165,13 +165,58 @@ export default function DoctorDashboardPage() {
                 
                 {/* Checked Appointments Section */}
                 {appointments.filter(a => a.status === "CHECKED").length > 0 && (
-                  <div className="pt-6 border-t mt-6">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-4">Recently Checked Patients</h3>
-                    <div className="space-y-3 opacity-60">
+                  <div className="pt-6 border-t border-border mt-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-semibold text-foreground flex items-center">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500 mr-2" />
+                        Recently Checked Patients ({appointments.filter(a => a.status === "CHECKED").length})
+                      </h3>
+                    </div>
+                    
+                    <div className="space-y-3">
                       {appointments.filter(a => a.status === "CHECKED").map(appt => (
-                        <div key={appt.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50">
-                          <span className="font-medium text-sm">{appt.patient?.name}</span>
-                          <span className="text-xs flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Checked</span>
+                        <div key={appt.id} className="flex flex-col space-y-3 p-4 border border-border rounded-xl bg-card shadow-sm transition-all hover:shadow-md">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-emerald-500/10 p-2.5 rounded-full">
+                                <User className="h-5 w-5 text-emerald-500" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-base text-foreground">{appt.patient?.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Email: <span className="text-foreground">{appt.patient?.email || "N/A"}</span>
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <span className="inline-flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full w-fit">
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Completed & Checked
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-2 border-t border-border/60">
+                            <div className="flex items-center">
+                              <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-emerald-500" />
+                              {new Date(appt.scheduledTime).toLocaleDateString()}
+                            </div>
+                            <div className="flex items-center">
+                              <Clock className="mr-1.5 h-3.5 w-3.5 text-emerald-500" />
+                              {new Date(appt.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+
+                          {appt.accessCode && (
+                            <div className="mt-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 text-xs px-3 py-2 rounded-lg flex items-center justify-between border border-emerald-500/20">
+                              <div className="flex items-center font-medium">
+                                Shared PIN: <strong className="ml-1.5 tracking-widest text-emerald-500 text-sm">{appt.accessCode}</strong>
+                              </div>
+                              <Link href={`/doctor/access?code=${appt.accessCode}`}>
+                                <Button variant="outline" size="sm" className="h-7 text-xs border-emerald-500/30 hover:bg-emerald-500/20">
+                                  Access File
+                                </Button>
+                              </Link>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
