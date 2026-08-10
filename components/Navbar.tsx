@@ -4,6 +4,8 @@ import Link from "next/link"
 import { Activity, Menu, X } from "lucide-react"
 import { Button } from "./ui/button"
 
+import { ThemeToggle } from "./ThemeToggle"
+
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -19,7 +21,8 @@ export function Navbar() {
           <Link href="/doctors" className="transition-colors text-muted-foreground hover:text-primary hover:scale-105">Doctors</Link>
           <Link href="/labs" className="transition-colors text-muted-foreground hover:text-primary hover:scale-105">Labs</Link>
         </nav>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
+          <ThemeToggle />
           <Link href="/login" className="hidden md:block">
             <Button variant="ghost" className="hidden md:inline-flex">Sign In</Button>
           </Link>

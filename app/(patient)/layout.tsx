@@ -7,6 +7,8 @@ import Link from "next/link"
 import { Activity, LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, HeartHandshake } from "lucide-react"
 import { BackButton } from "@/components/BackButton"
 
+import { ThemeToggle } from "@/components/ThemeToggle"
+
 export default async function PatientLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
   
@@ -15,8 +17,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/40">
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+    <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors duration-300">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4 md:px-6">
         <Link href="/" className="flex items-center space-x-2">
           <Activity className="h-6 w-6 text-primary" />
           <span className="font-bold text-xl tracking-tight hidden md:inline-block">BioBytes e-health tracker</span>
@@ -38,7 +40,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
             <HeartHandshake className="mr-2 h-4 w-4" /> Partners
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           <span className="text-sm font-medium hidden sm:inline-block">Hello, {session.user.name}</span>
           <Link href="/api/auth/signout" className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center">
             <LogOut className="h-4 w-4 mr-2" /> Sign out
