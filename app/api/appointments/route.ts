@@ -11,13 +11,18 @@ export async function POST(req: Request) {
   }
 
   const data = await req.json()
-  const { doctorId, date, time, preUploadData } = data
+  const { doctorId, date, time, scheduledTime: clientScheduledTime, preUploadData } = data
 
-  if (!doctorId || !date || !time) {
+  if (!doctorId || (!clientScheduledTime && (!date || !time))) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  const scheduledTime = new Date(`${date}T${time}`)
+  let scheduledTime: Date
+  if (clientScheduledTime) {
+    scheduledTime = new Date(clientScheduledTime)
+  } else {
+    scheduledTime = new Date(`${date}T${time}`)
+  }
 
   try {
     // Enforce max 10 patients per hourly slot per doctor per day

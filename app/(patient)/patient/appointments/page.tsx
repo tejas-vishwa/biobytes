@@ -75,10 +75,21 @@ export default function PatientAppointmentsPage() {
     e.preventDefault()
     setLoading(true)
     try {
+      let isoScheduledTime = ""
+      if (form.date && form.time) {
+        const [year, month, day] = form.date.split('-').map(Number)
+        const [hours, minutes] = form.time.split(':').map(Number)
+        const localScheduledDate = new Date(year, month - 1, day, hours, minutes)
+        isoScheduledTime = localScheduledDate.toISOString()
+      }
+
       const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          ...form,
+          scheduledTime: isoScheduledTime
+        })
       })
       if (res.ok) {
         setForm({ doctorId: "", date: "", time: "", preUploadData: false })
