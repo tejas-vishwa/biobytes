@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, User, FileText } from "lucide-react"
+import { AlertCircle, User, FileText, Eye } from "lucide-react"
 import { PatientTrendsDashboard } from "@/components/PatientTrendsDashboard"
 import { prisma } from "@/lib/prisma"
 
@@ -127,11 +127,22 @@ export default async function DoctorPatientView({ params }: { params: Promise<{ 
                 {reports.map(r => (
                   <li key={r.id} className="flex justify-between items-center border-b pb-2 last:border-0">
                     <div>
-                      <span className="font-medium">{r.labName || "Lab Report"}</span>
-                      <p className="text-xs text-muted-foreground">{new Date(r.reportDate!).toLocaleDateString()}</p>
+                      <span className="font-medium text-sm">{r.labName || "Lab Report"}</span>
+                      <p className="text-xs text-muted-foreground">{r.reportDate ? new Date(r.reportDate).toLocaleDateString() : 'Unknown date'}</p>
                     </div>
-                    <div className="text-sm font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">
-                      Available
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                        Available
+                      </span>
+                      <a
+                        href={r.fileUrl || `/api/reports/${r.id}/file`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-md transition-colors border border-indigo-200 dark:border-indigo-800"
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-1" />
+                        View PDF
+                      </a>
                     </div>
                   </li>
                 ))}
