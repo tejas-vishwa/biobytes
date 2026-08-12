@@ -18,7 +18,7 @@ export default async function LabsPage() {
         <div className="text-center mb-12 space-y-4">
           <h1 className="text-4xl font-bold tracking-tight">Our Trusted Lab Partners</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Book your next diagnostic test through BioBytes e-health tracker and have your reports automatically synchronized to your health dashboard.
+            Book your next diagnostic test through QURIX and have your reports automatically synchronized to your health dashboard.
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export default async function LabsPage() {
                   </div>
                 </div>
                 <CardDescription className="line-clamp-3">
-                  Leading diagnostic service provider offering comprehensive health packages with BioBytes automated report sync.
+                  Leading diagnostic service provider offering comprehensive health packages with QURIX automated report sync.
                 </CardDescription>
               </CardHeader>
               <CardFooter>

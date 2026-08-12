@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { seedDatabase } from "@/lib/seed-db"
 
 if (!process.env.NEXTAUTH_SECRET) {
-  process.env.NEXTAUTH_SECRET = "biobytes-production-secret-2026"
+  process.env.NEXTAUTH_SECRET = "qurix-production-secret-2026"
 }
 
 if (!process.env.NEXTAUTH_URL && process.env.VERCEL_URL) {
@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
           })
 
           // If demo user is missing, attempt auto-seeding
-          if (!user && (emailLower.includes("demo") || emailLower.includes("biobytes"))) {
+          if (!user && (emailLower.includes("demo") || emailLower.includes("biobytes") || emailLower.includes("qurix"))) {
             await seedDatabase()
             user = await prisma.user.findUnique({ where: { email: emailLower } })
           }

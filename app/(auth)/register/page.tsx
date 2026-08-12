@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Activity } from "lucide-react"
+import { QurixLogo } from "@/components/QurixLogo"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -77,9 +77,8 @@ export default function RegisterPage() {
       </div>
       <div className="w-full max-w-md space-y-8">
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center space-x-2">
-            <Activity className="h-8 w-8 text-primary" />
-            <span className="font-bold text-2xl tracking-tight">BioBytes e-health tracker</span>
+          <Link href="/" className="flex items-center group transition-transform hover:scale-105">
+            <QurixLogo className="h-10 w-auto" />
           </Link>
         </div>
         

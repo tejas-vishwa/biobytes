@@ -44,7 +44,7 @@ export default function Home() {
         <section className="w-full py-20 bg-slate-50 dark:bg-slate-900/50">
           <div className="container px-4 md:px-6 max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">How BioBytes e-health tracker Works</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">How QURIX Works</h2>
               <p className="text-muted-foreground">Four simple steps to take control of your health data.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -163,7 +163,7 @@ export default function Home() {
       
       <footer className="w-full border-t bg-muted/40 py-8">
         <div className="container flex flex-col md:flex-row justify-between items-center max-w-6xl mx-auto px-4 gap-4 text-sm text-muted-foreground">
-          <p>© 2026 BioBytes e-health tracker. SIH Prototype.</p>
+          <p>© 2026 QURIX Intelligent Health Tracker. All rights reserved.</p>
           <div className="flex space-x-6">
             <span className="flex items-center"><ShieldCheck className="h-4 w-4 mr-1" /> Secure & Encrypted</span>
             <span>ABHA-ready Architecture</span>

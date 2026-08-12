@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     // REGEX PARSING LOGIC
     const parsedData: any = {
       patient_name: null,
-      lab_name: "BioBytes Automated Lab",
+      lab_name: "QURIX Automated Lab",
       report_date: new Date().toISOString().split('T')[0],
       overall_summary: "Automated extraction using Tesseract.js and PDF-Parse.",
       biomarkers: []

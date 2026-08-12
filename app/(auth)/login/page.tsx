@@ -5,7 +5,8 @@ import { signIn, getSession } from "next-auth/react"
 import { BackButton } from "@/components/BackButton"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Activity, User, Stethoscope, ShieldCheck } from "lucide-react"
+import { User, Stethoscope, ShieldCheck } from "lucide-react"
+import { QurixLogo } from "@/components/QurixLogo"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -103,16 +104,15 @@ export default function LoginPage() {
       </div>
       <div className="w-full max-w-md space-y-6">
         <div className="flex justify-center mb-4">
-          <Link href="/" className="flex items-center space-x-2">
-            <Activity className="h-8 w-8 text-primary" />
-            <span className="font-bold text-2xl tracking-tight">BioBytes e-health tracker</span>
+          <Link href="/" className="flex items-center group transition-transform hover:scale-105">
+            <QurixLogo className="h-10 w-auto" />
           </Link>
         </div>
 
         <Card>
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">
-              Sign in to BioBytes e-health tracker
+              Sign in to QURIX
             </CardTitle>
             <CardDescription>
               Enter your credentials to access your portal
@@ -200,7 +200,7 @@ export default function LoginPage() {
                   type="button"
                   variant="outline"
                   className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
-                  onClick={() => demoLogin("admin@biobytes.in", "admin1234", "/admin")}
+                  onClick={() => demoLogin("admin@qurix.health", "admin1234", "/admin")}
                   disabled={loading}
                 >
                   Admin User

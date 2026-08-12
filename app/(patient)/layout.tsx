@@ -4,8 +4,9 @@ import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 import Link from "next/link"
-import { Activity, LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, HeartHandshake } from "lucide-react"
+import { LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, HeartHandshake } from "lucide-react"
 import { BackButton } from "@/components/BackButton"
+import { QurixLogo } from "@/components/QurixLogo"
 
 import { ThemeToggle } from "@/components/ThemeToggle"
 
@@ -19,9 +20,8 @@ export default async function PatientLayout({ children }: { children: React.Reac
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors duration-300">
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4 md:px-6">
-        <Link href="/" className="flex items-center space-x-2">
-          <Activity className="h-6 w-6 text-primary" />
-          <span className="font-bold text-xl tracking-tight hidden md:inline-block">BioBytes e-health tracker</span>
+        <Link href="/" className="flex items-center group transition-transform hover:scale-105">
+          <QurixLogo className="h-8 w-auto" showTagline={true} />
         </Link>
         <nav className="flex-1 flex items-center space-x-4 md:space-x-6 ml-6 overflow-x-auto">
           <Link href="/patient/dashboard" className="text-sm font-medium transition-colors hover:text-primary flex items-center whitespace-nowrap">

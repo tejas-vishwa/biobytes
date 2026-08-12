@@ -11,7 +11,7 @@ export default function PartnersPage() {
       name: "Dr. Lal PathLabs",
       type: "Diagnostics & Testing",
       discount: "15% off all home collection tests",
-      description: "Directly sync your test results into BioBytes e-health tracker. No more manual uploads.",
+      description: "Directly sync your test results into QURIX health tracker. No more manual uploads.",
       link: "https://www.lalpathlabs.com",
       color: "bg-blue-50 border-blue-200 text-blue-700",
       btnColor: "bg-blue-600 hover:bg-blue-700"
@@ -20,7 +20,7 @@ export default function PartnersPage() {
       name: "Tata 1mg",
       type: "Pharmacy & E-Consults",
       discount: "Up to 20% off prescription medicines",
-      description: "Order medicines based on your BioBytes e-health tracker health alerts and doctor prescriptions.",
+      description: "Order medicines based on your QURIX health alerts and doctor prescriptions.",
       link: "https://www.1mg.com",
       color: "bg-orange-50 border-orange-200 text-orange-700",
       btnColor: "bg-orange-600 hover:bg-orange-700"

@@ -6,8 +6,11 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "BioBytes e-health tracker",
+  title: "QURIX | Intelligent Health Tracker",
   description: "Digitize your lab reports, visualize health trends, and share securely with your doctor.",
+  icons: {
+    icon: "/qurix-logo.svg",
+  },
 }
 
 export default function RootLayout({

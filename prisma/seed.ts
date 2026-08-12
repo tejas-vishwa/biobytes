@@ -79,6 +79,15 @@ async function main() {
   const adminHash = await hash('admin1234', 10)
   const admin = await prisma.user.create({
     data: {
+      email: 'admin@qurix.health',
+      passwordHash: adminHash,
+      name: 'QURIX Admin',
+      role: 'ADMIN',
+    }
+  })
+
+  await prisma.user.create({
+    data: {
       email: 'admin@biobytes.in',
       passwordHash: adminHash,
       name: 'Admin User',

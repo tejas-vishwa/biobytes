@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldAlert } from "lucide-react"
 import { signOut } from "next-auth/react"
 
-import { ThemeToggle } from "./ThemeToggle"
+import { QurixLogo } from "./QurixLogo"
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -19,10 +19,10 @@ export default function AdminSidebar() {
 
   return (
     <div className="w-64 bg-card border-r border-border flex flex-col h-screen shadow-sm sticky top-0 transition-colors">
-      <div className="h-16 flex items-center justify-between px-6 border-b border-border">
-        <div className="flex items-center">
-          <ShieldAlert className="h-6 w-6 text-indigo-500 mr-2" />
-          <span className="font-bold text-xl tracking-tight text-foreground">BioBytes <span className="text-indigo-500">Admin</span></span>
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <QurixLogo className="h-7 w-auto" />
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">Admin</span>
         </div>
       </div>
       

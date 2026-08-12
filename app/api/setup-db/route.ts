@@ -12,8 +12,8 @@ export async function GET() {
       demoAccounts: {
         patient: "priya@demo.com / demo1234",
         doctor: "doctor@demo.com / demo1234",
-        admin: "admin@biobytes.in / admin1234",
-        superAdmin: "admin@teambiobytes.com / BB@1234@QURIX"
+        admin: "admin@qurix.health / admin1234",
+        superAdmin: "admin@teamqurix.com / BB@1234@QURIX"
       }
     })
   } else {

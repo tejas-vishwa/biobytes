@@ -25,7 +25,7 @@ export default function DoctorAccessPage() {
       const timer = setTimeout(() => {
         scanner = new Html5QrcodeScanner("reader", { qrbox: { width: 250, height: 250 }, fps: 5 }, false)
         scanner.render((decodedText) => {
-           setCode(decodedText.replace('BIO-', ''))
+           setCode(decodedText.replace(/^(QRX-|BIO-)/i, ''))
            setScanning(false)
         }, (err) => {
            // Ignore frame errors

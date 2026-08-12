@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QURIX | Intelligent Health Tracker
+
+This is the official **QURIX** application built with Next.js App Router, Prisma, and Tailwind CSS.
 
 ## Getting Started
 

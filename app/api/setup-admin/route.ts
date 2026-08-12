@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
-    const email = "admin@teambiobytes.com";
+    const email = "admin@teamqurix.com";
     const password = "BB@1234@QURIX";
 
     // Check if the admin already exists

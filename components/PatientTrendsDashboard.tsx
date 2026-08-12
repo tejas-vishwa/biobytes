@@ -130,7 +130,7 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       
       const imgData = canvas.toDataURL('image/png')
       const link = document.createElement('a')
-      link.download = `BioBytes_${name.replace(/[^a-zA-Z0-9]/g, '_')}_Trend.png`
+      link.download = `QURIX_${name.replace(/[^a-zA-Z0-9]/g, '_')}_Trend.png`
       link.href = imgData
       document.body.appendChild(link)
       link.click()
@@ -171,7 +171,7 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       doc.setFont("helvetica", "bold")
       doc.setFontSize(16)
       doc.setTextColor(255, 255, 255)
-      doc.text("BioBytes e-Health Tracker", 14, 15)
+      doc.text("QURIX Health Tracker", 14, 15)
       
       doc.setFontSize(9)
       doc.setFont("helvetica", "normal")
@@ -243,13 +243,13 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
         doc.setFontSize(8)
         doc.setTextColor(148, 163, 184)
         doc.text(
-          "BioBytes e-Health Report • Confidential • Does not replace professional medical advice.", 
+          "QURIX Health Report • Confidential • Does not replace professional medical advice.", 
           14, pageHeight - 8
         )
         doc.text(`Page ${p} of ${totalPages}`, pageWidth - 14, pageHeight - 8, { align: "right" })
       }
 
-      doc.save(`BioBytes_Health_Trends_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
+      doc.save(`QURIX_Health_Trends_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
     } catch (err: any) {
       console.error("PDF generation failed:", err)
       alert(`PDF Generation Note: ${err?.message || "Failed to generate PDF. Please try again."}`)

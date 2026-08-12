@@ -210,15 +210,21 @@ export async function seedDatabase() {
     })
 
     await prisma.user.upsert({
+      where: { email: "admin@qurix.health" },
+      update: { passwordHash: adminPasswordHash },
+      create: { email: "admin@qurix.health", passwordHash: adminPasswordHash, name: "QURIX Admin", role: "ADMIN" }
+    })
+
+    await prisma.user.upsert({
       where: { email: "admin@biobytes.in" },
       update: { passwordHash: adminPasswordHash },
       create: { email: "admin@biobytes.in", passwordHash: adminPasswordHash, name: "Admin User", role: "ADMIN" }
     })
 
     await prisma.user.upsert({
-      where: { email: "admin@teambiobytes.com" },
+      where: { email: "admin@teamqurix.com" },
       update: { passwordHash: superAdminPasswordHash },
-      create: { email: "admin@teambiobytes.com", passwordHash: superAdminPasswordHash, name: "Super Admin", role: "ADMIN" }
+      create: { email: "admin@teamqurix.com", passwordHash: superAdminPasswordHash, name: "Super Admin", role: "ADMIN" }
     })
 
     const doctor = await prisma.user.upsert({

@@ -1,16 +1,15 @@
 import Link from "next/link"
-import { Activity, LayoutDashboard, Users, Settings, LogOut } from "lucide-react"
 import { BackButton } from "@/components/BackButton"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { QurixLogo } from "@/components/QurixLogo"
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors duration-300">
       <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-background/80 backdrop-blur-md px-4 md:px-6 justify-between">
         <div className="flex items-center space-x-6">
-          <Link href="/" className="flex items-center space-x-2">
-            <Activity className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl tracking-tight hidden md:inline-block">BioBytes e-health tracker</span>
+          <Link href="/" className="flex items-center group transition-transform hover:scale-105">
+            <QurixLogo className="h-8 w-auto" showTagline={true} />
           </Link>
           <nav className="flex items-center space-x-6 ml-6">
             <Link href="/doctor/dashboard" className="text-sm font-medium hover:text-emerald-600 transition-colors">
