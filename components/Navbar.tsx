@@ -49,12 +49,12 @@ export function Navbar() {
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle Navigation Menu"
-            className="h-10 w-10 rounded-full flex items-center justify-center border border-border/60 bg-muted/40 hover:bg-muted text-foreground transition-all duration-200 active:scale-95 focus:outline-none"
+            className="h-12 w-12 rounded-xl flex items-center justify-center border-2 border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-foreground transition-all duration-200 active:scale-95 shadow-sm focus:outline-none"
           >
             {isMobileMenuOpen ? (
-              <X className="h-5 w-5 text-teal-400 transition-transform duration-200 rotate-90" />
+              <X className="h-7 w-7 text-teal-400 transition-transform duration-200 rotate-90" />
             ) : (
-              <Menu className="h-5 w-5 text-foreground" />
+              <Menu className="h-7 w-7 text-foreground" />
             )}
           </button>
         </div>
