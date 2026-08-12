@@ -10,29 +10,41 @@ export default function Home() {
       <Navbar />
       <main className="flex-1 flex flex-col items-center justify-center">
         {/* Hero Section */}
-        <section className="w-full py-24 lg:py-32 bg-gradient-to-b from-teal-50/50 to-white dark:from-teal-950/20 dark:to-background">
+        <section className="w-full py-20 lg:py-28 bg-gradient-to-b from-teal-50/50 to-white dark:from-teal-950/20 dark:to-background">
           <div className="container px-4 md:px-6 max-w-6xl mx-auto text-center space-y-8">
+            <div className="inline-flex items-center rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/50 px-4 py-1.5 text-sm font-medium text-teal-700 dark:text-teal-300 shadow-sm">
+              <Calendar className="mr-2 h-4 w-4 text-emerald-500" />
+              <span>Instant Appointment Booking & Live Digital Queue</span>
+            </div>
+
             <div className="space-y-4">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter sm:text-5xl">
-                Your health history, <br className="hidden sm:block" />
+                Your complete healthcare ecosystem, <br className="hidden sm:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-500">
-                  digitized and shared in seconds.
+                  appointments, OCR lab trends & prescriptions.
                 </span>
               </h1>
-              <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                Upload lab reports, track biomarkers over time, and give your doctor instant context with a secure access code.
+              <p className="mx-auto max-w-[750px] text-muted-foreground md:text-xl">
+                Book doctor appointments instantly, upload lab reports for AI 100-test trends, and share secure access codes with your physician.
               </p>
             </div>
+
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
               <Link href="/login">
-                <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full shadow-lg hover:shadow-xl transition-all">
+                <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full shadow-lg hover:shadow-xl transition-all bg-emerald-600 hover:bg-emerald-700">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Book Appointment Now
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full border-2">
                   <UploadCloud className="mr-2 h-5 w-5" />
                   Upload your document
                 </Button>
               </Link>
               <Link href="/doctor/access">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full border-2">
-                  <Stethoscope className="mr-2 h-5 w-5" />
+                <Button size="lg" variant="ghost" className="w-full sm:w-auto h-14 px-6 text-lg rounded-full">
+                  <Stethoscope className="mr-2 h-5 w-5 text-teal-600" />
                   Doctor Access Code
                 </Button>
               </Link>

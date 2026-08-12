@@ -36,9 +36,6 @@ export default async function PatientLayout({ children }: { children: React.Reac
           <Link href="/patient/appointments" className="text-sm font-medium transition-colors hover:text-primary flex items-center whitespace-nowrap">
             <Calendar className="mr-2 h-4 w-4" /> Appointments
           </Link>
-          <Link href="/patient/partners" className="text-sm font-medium transition-colors hover:text-primary flex items-center whitespace-nowrap">
-            <HeartHandshake className="mr-2 h-4 w-4" /> Partners
-          </Link>
         </nav>
         <div className="flex items-center gap-3">
           <ThemeToggle />
