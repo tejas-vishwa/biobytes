@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldAlert } from "lucide-react"
 import { signOut } from "next-auth/react"
 
+import { ThemeToggle } from "./ThemeToggle"
 import { QurixLogo } from "./QurixLogo"
 
 const navItems = [
