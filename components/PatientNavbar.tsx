@@ -82,13 +82,28 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
         </div>
       </div>
 
-      {/* Premium Mobile Menu Overlay */}
+      {/* Full-Screen Mobile Menu Drawer Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-[9999] bg-slate-950/98 text-slate-100 border-t border-slate-800/80 p-6 flex flex-col justify-between shadow-2xl backdrop-blur-2xl animate-in slide-in-from-top-2 overflow-y-auto">
+        <div className="md:hidden fixed inset-0 w-full h-full min-h-screen z-[99999] bg-slate-950 text-slate-100 p-6 flex flex-col justify-between overflow-y-auto animate-in fade-in duration-200">
           <div className="space-y-6">
+            {/* Top Bar inside Full Screen Overlay */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <QurixLogo className="h-8 w-auto" showTagline={true} />
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="h-12 w-12 rounded-xl flex items-center justify-center border-2 border-teal-500/40 bg-teal-500/10 text-teal-400 active:scale-95 transition-all focus:outline-none"
+                >
+                  <X className="h-7 w-7 rotate-90 transition-transform" />
+                </button>
+              </div>
+            </div>
+
             {/* Header User Badge */}
             {userName && (
-              <div className="pb-4 border-b border-slate-800/80 flex items-center space-x-3">
+              <div className="flex items-center space-x-3 p-4 rounded-2xl bg-slate-900/90 border border-slate-800/80">
                 <div className="h-10 w-10 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold">
                   <User className="h-5 w-5" />
                 </div>
@@ -109,22 +124,22 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
                     key={item.href}
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${
+                    className={`flex items-center justify-between p-4.5 rounded-2xl border transition-all duration-200 ${
                       isActive
                         ? "bg-gradient-to-r from-teal-500/20 to-emerald-500/10 border-teal-500/40 text-white shadow-lg"
                         : "bg-slate-900/90 border-slate-800/80 text-slate-200 hover:bg-slate-800/90 hover:border-slate-700"
                     }`}
                   >
-                    <div className="flex items-center space-x-3.5">
-                      <div className={`p-2.5 rounded-xl ${isActive ? "bg-teal-500 text-slate-950" : "bg-slate-800 text-teal-400"}`}>
-                        <Icon className="h-5 w-5" />
+                    <div className="flex items-center space-x-4">
+                      <div className={`p-3 rounded-xl ${isActive ? "bg-teal-500 text-slate-950" : "bg-slate-800 text-teal-400"}`}>
+                        <Icon className="h-6 w-6" />
                       </div>
                       <div>
-                        <p className="font-bold text-base text-white">{item.name}</p>
+                        <p className="font-bold text-lg text-white">{item.name}</p>
                         <p className="text-xs text-slate-400 font-medium">{item.desc}</p>
                       </div>
                     </div>
-                    <ChevronRight className={`h-5 w-5 ${isActive ? "text-teal-400" : "text-slate-500"}`} />
+                    <ChevronRight className={`h-6 w-6 ${isActive ? "text-teal-400" : "text-slate-500"}`} />
                   </Link>
                 )
               })}
@@ -136,9 +151,9 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
             <Link
               href="/api/auth/signout"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex w-full items-center justify-center p-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/25 transition-all text-base shadow-sm"
+              className="flex w-full items-center justify-center p-4.5 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/25 transition-all text-lg shadow-sm"
             >
-              <LogOut className="mr-2 h-5 w-5" /> Sign out
+              <LogOut className="mr-2 h-6 w-6" /> Sign out
             </Link>
           </div>
         </div>
