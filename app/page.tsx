@@ -1,7 +1,7 @@
 import { Navbar } from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ActivitySquare, FileText, LineChart, ShieldCheck, Stethoscope, UploadCloud, TestTube, QrCode, ArrowRight, CheckCircle2 } from "lucide-react"
+import { ActivitySquare, FileText, LineChart, ShieldCheck, Stethoscope, UploadCloud, TestTube, QrCode, ArrowRight, CheckCircle2, Calendar } from "lucide-react"
 import Link from "next/link"
 
 export default function Home() {
