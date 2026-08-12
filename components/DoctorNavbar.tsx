@@ -32,8 +32,8 @@ export function DoctorNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-emerald-500 flex items-center ${
-                  isActive ? "text-emerald-500 font-semibold" : "text-muted-foreground"
+                className={`text-sm font-medium transition-colors hover:text-emerald-600 flex items-center ${
+                  isActive ? "text-emerald-600 font-semibold" : "text-muted-foreground"
                 }`}
               >
                 <Icon className="mr-2 h-4 w-4" /> {item.name}
@@ -53,49 +53,50 @@ export function DoctorNavbar() {
           </Link>
         </div>
 
-        {/* Mobile Right Controls & Sleek Hamburger Toggle */}
+        {/* Mobile Right Controls & Sleek Theme-Blended Toggle */}
         <div className="flex md:hidden items-center gap-2">
           <ThemeToggle />
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle navigation menu"
-            className="h-12 w-12 rounded-xl flex items-center justify-center border-2 border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-foreground transition-all duration-200 active:scale-95 shadow-sm focus:outline-none"
+            className="h-10 w-10 rounded-full flex items-center justify-center border border-input bg-background hover:bg-accent text-foreground transition-all duration-200 active:scale-95 shadow-sm focus:outline-none"
           >
             {isMobileMenuOpen ? (
-              <X className="h-7 w-7 text-emerald-400 transition-transform duration-200 rotate-90" />
+              <X className="h-5 w-5 text-emerald-600 dark:text-emerald-400 transition-transform duration-200 rotate-90" />
             ) : (
-              <Menu className="h-7 w-7 text-foreground" />
+              <Menu className="h-5 w-5 text-foreground" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Full-Screen Mobile Menu Drawer Overlay */}
+      {/* Full-Screen Mobile Menu Drawer Overlay (Seamless Theme Blending) */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 w-full h-full min-h-screen z-[99999] bg-slate-950 text-slate-100 p-6 flex flex-col justify-between overflow-y-auto animate-in fade-in duration-200">
+        <div className="md:hidden fixed inset-0 w-full h-full min-h-screen z-[99999] bg-background text-foreground p-6 flex flex-col justify-between overflow-y-auto animate-in fade-in duration-200">
           <div className="space-y-6">
             {/* Top Bar inside Full Screen Overlay */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div className="flex items-center justify-between pb-4 border-b border-border/60">
               <QurixLogo className="h-8 w-auto" showTagline={true} />
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <ThemeToggle />
                 <button
                   type="button"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="h-12 w-12 rounded-xl flex items-center justify-center border-2 border-emerald-500/40 bg-emerald-500/10 text-emerald-400 active:scale-95 transition-all focus:outline-none"
+                  aria-label="Close menu"
+                  className="h-10 w-10 rounded-full flex items-center justify-center border border-input bg-background hover:bg-accent text-foreground active:scale-95 transition-all focus:outline-none shadow-sm"
                 >
-                  <X className="h-7 w-7 rotate-90 transition-transform" />
+                  <X className="h-5 w-5 text-emerald-600 dark:text-emerald-400 rotate-90 transition-transform" />
                 </button>
               </div>
             </div>
 
-            {/* Header Badge */}
-            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800/80">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            {/* Header Badge Card */}
+            <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-sm">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                 <Stethoscope className="h-3.5 w-3.5" /> Doctor Workstation
               </div>
-              <h2 className="text-2xl font-black text-white tracking-tight mt-2">Clinical Portal</h2>
+              <h2 className="text-xl font-extrabold text-foreground mt-2">Clinical Portal</h2>
             </div>
 
             {/* Navigation Cards */}
@@ -108,22 +109,22 @@ export function DoctorNavbar() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center justify-between p-4.5 rounded-2xl border transition-all duration-200 ${
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 shadow-sm ${
                       isActive
-                        ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/10 border-emerald-500/40 text-white shadow-lg"
-                        : "bg-slate-900/90 border-slate-800/80 text-slate-200 hover:bg-slate-800/90 hover:border-slate-700"
+                        ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold"
+                        : "bg-card border-border/70 text-card-foreground hover:bg-accent/60"
                     }`}
                   >
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-3 rounded-xl ${isActive ? "bg-emerald-500 text-slate-950" : "bg-slate-800 text-emerald-400"}`}>
-                        <Icon className="h-6 w-6" />
+                    <div className="flex items-center space-x-3.5">
+                      <div className={`p-2.5 rounded-xl ${isActive ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                        <Icon className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-bold text-lg text-white">{item.name}</p>
-                        <p className="text-xs text-slate-400 font-medium">{item.desc}</p>
+                        <p className="font-bold text-base text-foreground">{item.name}</p>
+                        <p className="text-xs text-muted-foreground font-medium">{item.desc}</p>
                       </div>
                     </div>
-                    <ChevronRight className={`h-6 w-6 ${isActive ? "text-emerald-400" : "text-slate-500"}`} />
+                    <ChevronRight className={`h-5 w-5 ${isActive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`} />
                   </Link>
                 )
               })}
@@ -131,13 +132,13 @@ export function DoctorNavbar() {
           </div>
 
           {/* Sign Out Button */}
-          <div className="pt-6 border-t border-slate-800/80 mt-6">
+          <div className="pt-6 border-t border-border/60 mt-6">
             <Link
               href="/api/auth/signout"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex w-full items-center justify-center p-4.5 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/25 transition-all text-lg shadow-sm"
+              className="flex w-full items-center justify-center p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold hover:bg-destructive/20 transition-all text-base shadow-sm"
             >
-              <LogOut className="mr-2 h-6 w-6" /> Sign out
+              <LogOut className="mr-2 h-5 w-5" /> Sign out
             </Link>
           </div>
         </div>
