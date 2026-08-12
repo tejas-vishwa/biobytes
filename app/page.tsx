@@ -27,7 +27,7 @@ export default function Home() {
               <Link href="/login">
                 <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full shadow-lg hover:shadow-xl transition-all">
                   <UploadCloud className="mr-2 h-5 w-5" />
-                  Upload First Report — Free
+                  Upload your document
                 </Button>
               </Link>
               <Link href="/doctor/access">
