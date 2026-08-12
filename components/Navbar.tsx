@@ -49,48 +49,48 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Off-Canvas Drawer Overlay */}
+      {/* Mobile Off-Canvas Drawer Overlay with 100% Opaque Solid Background */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-background/95 backdrop-blur-2xl border-t border-border p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-top-2">
-          <nav className="flex flex-col space-y-5 text-lg font-semibold">
+        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-[999] bg-white dark:bg-slate-950 border-t border-border p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-top-2 overflow-y-auto">
+          <nav className="flex flex-col space-y-3">
             <Link
               href="/"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-3 rounded-lg text-foreground hover:bg-muted transition-colors"
+              className="p-3.5 rounded-xl text-base font-semibold text-foreground bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:bg-muted transition-colors"
             >
               Home
             </Link>
             <Link
               href="/patients"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-3 rounded-lg text-foreground hover:bg-muted transition-colors"
+              className="p-3.5 rounded-xl text-base font-semibold text-foreground bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:bg-muted transition-colors"
             >
               For Patients
             </Link>
             <Link
               href="/doctors"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-3 rounded-lg text-foreground hover:bg-muted transition-colors"
+              className="p-3.5 rounded-xl text-base font-semibold text-foreground bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:bg-muted transition-colors"
             >
               For Doctors
             </Link>
             <Link
               href="/labs"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-3 rounded-lg text-foreground hover:bg-muted transition-colors"
+              className="p-3.5 rounded-xl text-base font-semibold text-foreground bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:bg-muted transition-colors"
             >
               For Labs
             </Link>
           </nav>
 
-          <div className="border-t border-border pt-6 flex flex-col space-y-3">
+          <div className="border-t border-border/60 pt-6 mt-6 flex flex-col space-y-3">
             <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button variant="outline" className="w-full h-12 text-base justify-center">
+              <Button variant="outline" className="w-full h-12 text-base justify-center rounded-xl">
                 Sign In
               </Button>
             </Link>
             <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button className="w-full h-12 text-base justify-center bg-emerald-600 hover:bg-emerald-700 shadow-lg">
+              <Button className="w-full h-12 text-base justify-center bg-emerald-600 hover:bg-emerald-700 shadow-lg rounded-xl">
                 Get Started Free
               </Button>
             </Link>

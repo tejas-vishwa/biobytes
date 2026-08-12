@@ -24,7 +24,7 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
   ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-md">
       <div className="container flex h-16 max-w-7xl mx-auto items-center justify-between px-4">
         <Link href="/" className="flex items-center group transition-transform hover:scale-105">
           <QurixLogo className="h-7 md:h-8 w-auto" showTagline={true} />
@@ -74,19 +74,19 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle navigation menu"
           >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMobileMenuOpen ? <X className="h-6 w-6 text-foreground" /> : <Menu className="h-6 w-6 text-foreground" />}
           </Button>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown Overlay */}
+      {/* Mobile Menu Dropdown Overlay with 100% Opaque Solid Background */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-top-2">
-          <nav className="flex flex-col space-y-4">
+        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-[999] bg-white dark:bg-slate-950 border-t border-border p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-top-2 overflow-y-auto">
+          <nav className="flex flex-col space-y-3">
             {userName && (
-              <div className="pb-3 border-b border-border">
-                <p className="text-xs text-muted-foreground uppercase font-semibold">Signed in as</p>
-                <p className="text-lg font-bold text-foreground">{userName}</p>
+              <div className="pb-4 mb-2 border-b border-border/60">
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Signed in as</p>
+                <p className="text-xl font-extrabold text-foreground mt-0.5">{userName}</p>
               </div>
             )}
 
@@ -98,24 +98,24 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center p-3 rounded-lg text-base font-medium transition-all ${
+                  className={`flex items-center p-3.5 rounded-xl text-base font-semibold transition-all border ${
                     isActive
-                      ? "bg-primary/10 text-primary font-semibold"
-                      : "text-foreground hover:bg-muted"
+                      ? "bg-teal-500/15 border-teal-500/30 text-teal-600 dark:text-teal-400 shadow-sm"
+                      : "bg-slate-100/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-foreground hover:bg-muted"
                   }`}
                 >
-                  <Icon className="mr-3 h-5 w-5 text-primary" />
+                  <Icon className={`mr-3 h-5 w-5 ${isActive ? "text-teal-500" : "text-muted-foreground"}`} />
                   {item.name}
                 </Link>
               )
             })}
           </nav>
 
-          <div className="border-t border-border pt-6">
+          <div className="border-t border-border/60 pt-6 mt-6">
             <Link
               href="/api/auth/signout"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex w-full items-center justify-center p-3 rounded-lg bg-destructive/10 text-destructive font-medium hover:bg-destructive/20 transition-colors"
+              className="flex w-full items-center justify-center p-3.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 font-bold hover:bg-red-500/20 transition-colors border border-red-500/20"
             >
               <LogOut className="mr-2 h-5 w-5" /> Sign out
             </Link>
