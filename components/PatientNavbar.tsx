@@ -3,10 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, Menu, X } from "lucide-react"
+import { LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, Menu, X, ChevronRight, User } from "lucide-react"
 import { QurixLogo } from "@/components/QurixLogo"
 import { ThemeToggle } from "@/components/ThemeToggle"
-import { Button } from "@/components/ui/button"
 
 interface PatientNavbarProps {
   userName?: string | null
@@ -17,10 +16,10 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
   const pathname = usePathname()
 
   const navItems = [
-    { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
-    { name: "Upload", href: "/patient/upload", icon: UploadCloud },
-    { name: "Trends", href: "/patient/trends", icon: LineChart },
-    { name: "Appointments", href: "/patient/appointments", icon: Calendar },
+    { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard, desc: "Health overview & metrics" },
+    { name: "Upload", href: "/patient/upload", icon: UploadCloud, desc: "Lab reports & prescriptions" },
+    { name: "Trends", href: "/patient/trends", icon: LineChart, desc: "100-test longitudinal charts" },
+    { name: "Appointments", href: "/patient/appointments", icon: Calendar, desc: "Doctor bookings & queues" },
   ]
 
   return (
@@ -39,8 +38,8 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-primary flex items-center ${
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                className={`text-sm font-medium transition-colors hover:text-teal-500 flex items-center ${
+                  isActive ? "text-teal-500 font-semibold" : "text-muted-foreground"
                 }`}
               >
                 <Icon className="mr-2 h-4 w-4" /> {item.name}
@@ -65,57 +64,79 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
           </Link>
         </div>
 
-        {/* Mobile Right Controls & Hamburger Toggle */}
+        {/* Mobile Right Controls & Sleek Hamburger Toggle */}
         <div className="flex md:hidden items-center gap-2">
           <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
+            type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle navigation menu"
+            className="h-10 w-10 rounded-full flex items-center justify-center border border-border/60 bg-muted/40 hover:bg-muted text-foreground transition-all duration-200 active:scale-95 focus:outline-none"
           >
-            {isMobileMenuOpen ? <X className="h-6 w-6 text-foreground" /> : <Menu className="h-6 w-6 text-foreground" />}
-          </Button>
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5 text-teal-400 transition-transform duration-200 rotate-90" />
+            ) : (
+              <Menu className="h-5 w-5 text-foreground" />
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown Overlay with 100% Opaque Solid Background */}
+      {/* Premium Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-[999] bg-white dark:bg-slate-950 border-t border-border p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-top-2 overflow-y-auto">
-          <nav className="flex flex-col space-y-3">
+        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-[9999] bg-slate-950/98 text-slate-100 border-t border-slate-800/80 p-6 flex flex-col justify-between shadow-2xl backdrop-blur-2xl animate-in slide-in-from-top-2 overflow-y-auto">
+          <div className="space-y-6">
+            {/* Header User Badge */}
             {userName && (
-              <div className="pb-4 mb-2 border-b border-border/60">
-                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Signed in as</p>
-                <p className="text-xl font-extrabold text-foreground mt-0.5">{userName}</p>
+              <div className="pb-4 border-b border-slate-800/80 flex items-center space-x-3">
+                <div className="h-10 w-10 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 font-bold">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-teal-400 uppercase font-bold tracking-wider">Signed in as</p>
+                  <p className="text-lg font-black text-white">{userName}</p>
+                </div>
               </div>
             )}
 
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center p-3.5 rounded-xl text-base font-semibold transition-all border ${
-                    isActive
-                      ? "bg-teal-500/15 border-teal-500/30 text-teal-600 dark:text-teal-400 shadow-sm"
-                      : "bg-slate-100/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <Icon className={`mr-3 h-5 w-5 ${isActive ? "text-teal-500" : "text-muted-foreground"}`} />
-                  {item.name}
-                </Link>
-              )
-            })}
-          </nav>
+            {/* Navigation Cards */}
+            <nav className="flex flex-col space-y-3">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-200 ${
+                      isActive
+                        ? "bg-gradient-to-r from-teal-500/20 to-emerald-500/10 border-teal-500/40 text-white shadow-lg"
+                        : "bg-slate-900/90 border-slate-800/80 text-slate-200 hover:bg-slate-800/90 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3.5">
+                      <div className={`p-2.5 rounded-xl ${isActive ? "bg-teal-500 text-slate-950" : "bg-slate-800 text-teal-400"}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-base text-white">{item.name}</p>
+                        <p className="text-xs text-slate-400 font-medium">{item.desc}</p>
+                      </div>
+                    </div>
+                    <ChevronRight className={`h-5 w-5 ${isActive ? "text-teal-400" : "text-slate-500"}`} />
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
 
-          <div className="border-t border-border/60 pt-6 mt-6">
+          {/* Sign Out Button */}
+          <div className="pt-6 border-t border-slate-800/80 mt-6">
             <Link
               href="/api/auth/signout"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex w-full items-center justify-center p-3.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 font-bold hover:bg-red-500/20 transition-colors border border-red-500/20"
+              className="flex w-full items-center justify-center p-4 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/25 transition-all text-base shadow-sm"
             >
               <LogOut className="mr-2 h-5 w-5" /> Sign out
             </Link>
