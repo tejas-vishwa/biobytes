@@ -191,22 +191,6 @@ export default function LoginPage() {
                 </Button>
               </div>
 
-              {/* Admin Demo Account */}
-              <div className="w-full space-y-2">
-                <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" /> Admin (password: BB@quirx.in)
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
-                  onClick={() => demoLogin("admin@qurix.health", "BB@quirx.in", "/admin")}
-                  disabled={loading}
-                >
-                  Admin User
-                </Button>
-              </div>
-
             </CardFooter>
           </form>
         </Card>
