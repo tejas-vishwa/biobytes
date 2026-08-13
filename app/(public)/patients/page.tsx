@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/Navbar"
+import { Footer } from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ActivitySquare, CheckCircle } from "lucide-react"
@@ -38,6 +39,7 @@ export default function PatientsPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </>
   )
 }

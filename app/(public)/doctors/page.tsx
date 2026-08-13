@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/Navbar"
+import { Footer } from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Stethoscope, KeyRound, Clock, ShieldCheck } from "lucide-react"
@@ -42,6 +43,7 @@ export default function DoctorsPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </>
   )
 }

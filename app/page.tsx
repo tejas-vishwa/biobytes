@@ -1,4 +1,5 @@
 import { Navbar } from "@/components/Navbar"
+import { Footer } from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ActivitySquare, FileText, LineChart, ShieldCheck, Stethoscope, UploadCloud, TestTube, QrCode, ArrowRight, CheckCircle2, Calendar } from "lucide-react"
@@ -172,16 +173,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      
-      <footer className="w-full border-t bg-muted/40 py-8">
-        <div className="container flex flex-col md:flex-row justify-between items-center max-w-6xl mx-auto px-4 gap-4 text-sm text-muted-foreground">
-          <p>© 2026 QURIX Intelligent Health Tracker. All rights reserved.</p>
-          <div className="flex space-x-6">
-            <span className="flex items-center"><ShieldCheck className="h-4 w-4 mr-1" /> Secure & Encrypted</span>
-            <span>ABHA-ready Architecture</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   )
 }

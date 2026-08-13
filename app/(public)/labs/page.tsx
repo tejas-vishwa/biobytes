@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { Navbar } from "@/components/Navbar"
+import { Footer } from "@/components/Footer"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import { ExternalLink, Beaker } from "lucide-react"
@@ -53,6 +54,7 @@ export default async function LabsPage() {
           ))}
         </div>
       </main>
+      <Footer />
     </>
   )
 }

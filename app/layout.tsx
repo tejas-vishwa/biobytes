@@ -1,9 +1,6 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import { Providers } from "./providers"
 import "./globals.css"
-
-const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "QURIX | Intelligent Health Tracker",
@@ -20,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-background antialiased flex flex-col`}>
+      <body className="min-h-screen bg-background antialiased flex flex-col font-sans">
         <Providers>
           {children}
         </Providers>
