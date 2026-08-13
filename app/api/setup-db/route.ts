@@ -12,7 +12,7 @@ export async function GET() {
       demoAccounts: {
         patient: "priya@demo.com / demo1234",
         doctor: "doctor@demo.com / demo1234",
-        admin: "admin@qurix.health / admin1234",
+        admin: "admin@qurix.health / BB@quirx.in",
         superAdmin: "admin@teamqurix.com / BB@1234@QURIX"
       }
     })
