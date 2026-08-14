@@ -2,16 +2,16 @@ import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ActivitySquare, FileText, LineChart, ShieldCheck, Stethoscope, UploadCloud, TestTube, QrCode, ArrowRight, CheckCircle2, Calendar } from "lucide-react"
+import { ActivitySquare, FileText, LineChart, ShieldCheck, Stethoscope, UploadCloud, TestTube, QrCode, ArrowRight, CheckCircle2, Calendar, Smartphone } from "lucide-react"
 import Link from "next/link"
 
 export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 flex flex-col items-center justify-center">
+      <main className="flex-1">
         {/* Hero Section */}
-        <section className="w-full py-20 lg:py-28 bg-gradient-to-b from-teal-50/50 to-white dark:from-teal-950/20 dark:to-background">
+        <section className="relative py-20 md:py-32 overflow-hidden bg-gradient-to-b from-teal-500/10 via-background to-background">
           <div className="container px-4 md:px-6 max-w-6xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/50 px-4 py-1.5 text-sm font-medium text-teal-700 dark:text-teal-300 shadow-sm">
               <Calendar className="mr-2 h-4 w-4 text-emerald-500" />
@@ -43,6 +43,12 @@ export default function Home() {
                   Upload your document
                 </Button>
               </Link>
+              <a href="https://github.com/tejas-vishwa/biobytes/actions" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-600 dark:text-teal-300 font-semibold shadow-sm">
+                  <Smartphone className="mr-2 h-5 w-5" />
+                  Download Android APK
+                </Button>
+              </a>
               <Link href="/doctor/access">
                 <Button size="lg" variant="ghost" className="w-full sm:w-auto h-14 px-6 text-lg rounded-full">
                   <Stethoscope className="mr-2 h-5 w-5 text-teal-600" />

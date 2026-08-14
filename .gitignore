@@ -20,6 +20,15 @@
 # production
 /build
 
+# android build cache
+android/.gradle
+android/.idea
+android/build
+android/app/build
+android/local.properties
+android/app/libs
+*.lock
+
 # misc
 .DS_Store
 *.pem
@@ -30,7 +39,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
