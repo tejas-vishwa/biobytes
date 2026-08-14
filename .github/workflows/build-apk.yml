@@ -22,15 +22,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Make Gradle executable
-        run: |
-          cd android
-          chmod +x gradlew || true
-
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          gradle assembleDebug --no-daemon
 
       - name: Rename & Upload APK Artifact
         uses: actions/upload-artifact@v4
