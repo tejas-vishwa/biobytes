@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, User, FileText, Eye } from "lucide-react"
+import { AlertCircle, User, FileText, Eye, Pill, Thermometer, HeartPulse } from "lucide-react"
 import { PatientTrendsDashboard } from "@/components/PatientTrendsDashboard"
 import { prisma } from "@/lib/prisma"
 
@@ -43,6 +43,12 @@ export default async function DoctorPatientView({ params }: { params: Promise<{ 
   const healthRecords = await prisma.userHealthRecord.findMany({
     where: { patientId },
     include: { report: true },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  // Fetch patient prescriptions
+  const prescriptions = await prisma.prescription.findMany({
+    where: { patientId },
     orderBy: { createdAt: 'desc' }
   })
 
@@ -146,6 +152,63 @@ export default async function DoctorPatientView({ params }: { params: Promise<{ 
                     </div>
                   </li>
                 ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Prescriptions History for Doctor */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center">
+              <Pill className="mr-2 h-5 w-5 text-emerald-600 dark:text-emerald-400" /> Prescriptions History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {prescriptions.length === 0 ? (
+              <p className="text-muted-foreground">No prescriptions uploaded.</p>
+            ) : (
+              <ul className="space-y-4">
+                {prescriptions.map(p => {
+                  const meds = p.medicinesJson ? JSON.parse(p.medicinesJson) : []
+                  const vitals = p.vitalsJson ? JSON.parse(p.vitalsJson) : {}
+                  return (
+                    <li key={p.id} className="border-b pb-3 last:border-0 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-semibold text-sm">{p.fileName}</span>
+                          <p className="text-xs text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <a
+                          href={p.fileUrl || `/api/prescriptions/${p.id}/file`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 rounded border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100"
+                        >
+                          <Eye className="h-3 w-3 mr-1" /> View Original
+                        </a>
+                      </div>
+
+                      {/* Extracted medicines summary */}
+                      {meds.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {meds.map((m: any, idx: number) => (
+                            <span key={idx} className="text-[11px] font-semibold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">
+                              {m.name} ({m.dosage})
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Vitals summary */}
+                      {vitals.temperature && (
+                        <p className="text-xs font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                          <Thermometer className="h-3 w-3" /> Body Temp: {vitals.temperature}
+                        </p>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </CardContent>
