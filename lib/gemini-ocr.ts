@@ -19,6 +19,24 @@ const NON_MEDICINE_WORDS = new Set([
 ])
 
 /**
+ * Extracts raw text from PDF files using unpdf.
+ */
+export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    const pdfData = await extractText(new Uint8Array(buffer))
+    if (typeof pdfData === "string") {
+      return pdfData
+    } else if (pdfData && typeof pdfData === "object" && "text" in pdfData) {
+      const textObj = (pdfData as any).text
+      return Array.isArray(textObj) ? textObj.join("\n") : textObj || ""
+    }
+  } catch (err) {
+    console.warn("PDF extraction error:", err)
+  }
+  return ""
+}
+
+/**
  * Sanitizes and validates extracted medications list.
  * Strips out header words, prepositions, timing instructions, item list numbers, and non-drug text.
  */
@@ -102,17 +120,7 @@ async function fallbackPrescriptionExtraction(
   let extractedText = ""
 
   if (mimeType.includes("pdf")) {
-    try {
-      const pdfData = await extractText(new Uint8Array(buffer))
-      if (typeof pdfData === "string") {
-        extractedText = pdfData
-      } else if (pdfData && typeof pdfData === "object" && "text" in pdfData) {
-        const textObj = (pdfData as any).text
-        extractedText = Array.isArray(textObj) ? textObj.join("\n") : textObj || ""
-      }
-    } catch (err) {
-      console.warn("unpdf extraction failed:", err)
-    }
+    extractedText = await extractTextFromPDF(buffer)
   }
 
   if (!extractedText.trim()) {
@@ -143,13 +151,11 @@ async function fallbackPrescriptionExtraction(
 
   const rawMedications: ExtractedMedication[] = []
   
-  // Intelligent line-by-line drug matching
   const lines = extractedText.split("\n")
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed) continue
 
-    // Regex requiring explicit medical strength (mg, g, mcg, ml, cap, tab) or known drug prefix
     const lineMatch = trimmed.match(/(?:tab|tbl|tablet|cap|capsule|syrup|inj)?\s*([A-Za-z]{3,25})\s+([\d\.]+\s*(?:mg|g|mcg|ml|iu)?)(?:\s+([\d\-]{3,7}|once daily|twice daily|thrice daily|1-0-1|1-1-1|1-0-0|0-0-1|OD|BD|TDS|SOS))?/i)
 
     if (lineMatch && lineMatch[1]) {
@@ -187,17 +193,7 @@ async function fallbackLabReportExtraction(
   let extractedText = ""
 
   if (mimeType.includes("pdf")) {
-    try {
-      const pdfData = await extractText(new Uint8Array(buffer))
-      if (typeof pdfData === "string") {
-        extractedText = pdfData
-      } else if (pdfData && typeof pdfData === "object" && "text" in pdfData) {
-        const textObj = (pdfData as any).text
-        extractedText = Array.isArray(textObj) ? textObj.join("\n") : textObj || ""
-      }
-    } catch (err) {
-      console.warn("unpdf extraction failed:", err)
-    }
+    extractedText = await extractTextFromPDF(buffer)
   }
 
   if (!extractedText.trim()) {
