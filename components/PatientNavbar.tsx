@@ -17,9 +17,9 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
 
   const navItems = [
     { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard, desc: "Health overview & metrics" },
-    { name: "Scan AI", href: "/patient/scan-analysis", icon: Activity, desc: "X-Ray & CT/MRI AI analysis" },
+    { name: "Upload", href: "/patient/upload", icon: UploadCloud, desc: "Unified Hub: Reports, Prescriptions & Scans" },
     { name: "Prescriptions", href: "/patient/prescriptions", icon: Pill, desc: "Medicines & OCR symptoms" },
-    { name: "Upload", href: "/patient/upload", icon: UploadCloud, desc: "Lab reports & files" },
+    { name: "Scan AI", href: "/patient/scan-analysis", icon: Activity, desc: "X-Ray & CT/MRI AI analysis" },
     { name: "Trends", href: "/patient/trends", icon: LineChart, desc: "100-test longitudinal charts" },
     { name: "Appointments", href: "/patient/appointments", icon: Calendar, desc: "Doctor bookings & queues" },
   ]
