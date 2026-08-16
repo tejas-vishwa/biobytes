@@ -26,6 +26,7 @@ model User {
   doctorAppointments  Appointment[]  @relation("DoctorAppointments")
   healthRecords       UserHealthRecord[]
   prescriptions       Prescription[] @relation("PatientPrescriptions")
+  scans               MedicalScan[]  @relation("PatientScans")
   activities          ActivityLog[]
 }
 
@@ -194,4 +195,21 @@ model Prescription {
   symptomsJson  String?  // Extracted JSON array or text of symptoms/diagnosis
   vitalsJson    String?  // Extracted JSON object: { temperature?: string, bp?: string, pulse?: string, weight?: string }
   createdAt     DateTime @default(now())
+}
+
+model MedicalScan {
+  id               String   @id @default(uuid())
+  patientId        String
+  patient          User     @relation("PatientScans", fields: [patientId], references: [id], onDelete: Cascade)
+  fileName         String
+  fileUrl          String?
+  fileData         String?  // Base64 encoded scan image content stored directly in Turso / SQLite
+  fileType         String?  // MIME type (image/png, image/jpeg, etc.)
+  modality         String?  // Chest X-Ray (2D), 3D CT/MRI Volume
+  modelUsed        String?  // TorchXRayVision DenseNet-121, MONAI 3D
+  overallRisk      String?  // LOW, MODERATE, HIGH, CRITICAL
+  maxProbability   Float?
+  pathologiesJson  String?  // Extracted JSON array of pathologies & probabilities
+  summary          String?
+  createdAt        DateTime @default(now())
 }

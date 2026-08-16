@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UploadCloud, FileText, Activity, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Cpu, Stethoscope, Layers, ShieldCheck, Zap, Image as ImageIcon, Eye, X } from "lucide-react"
+import { UploadCloud, FileText, Activity, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Cpu, Stethoscope, Layers, ShieldCheck, Zap, Image as ImageIcon, Eye, X, Trash2, Calendar } from "lucide-react"
 
 export default function ScanAnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -12,27 +12,65 @@ export default function ScanAnalysisPage() {
   const [results, setResults] = useState<any | null>(null)
   const [error, setError] = useState("")
 
-  // Generate object URL for image preview when a file is selected
+  // Saved scans history state
+  const [scans, setScans] = useState<any[]>([])
+  const [loadingScans, setLoadingScans] = useState(true)
+  const [selectedScanId, setSelectedScanId] = useState<string | null>(null)
+
   useEffect(() => {
-    if (!selectedFile) {
-      setImagePreviewUrl(null)
-      return
-    }
+    fetchScans()
+  }, [])
 
-    if (selectedFile.type.startsWith("image/")) {
-      const url = URL.createObjectURL(selectedFile)
-      setImagePreviewUrl(url)
-      return () => URL.revokeObjectURL(url)
-    } else {
-      setImagePreviewUrl(null)
+  const fetchScans = async () => {
+    try {
+      const res = await fetch("/api/scans")
+      if (res.ok) {
+        const data = await res.json()
+        setScans(data)
+        if (data.length > 0 && !selectedScanId && !results) {
+          selectScanRecord(data[0])
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching scans:", err)
+    } finally {
+      setLoadingScans(false)
     }
-  }, [selectedFile])
+  }
 
+  const selectScanRecord = (scan: any) => {
+    setSelectedScanId(scan.id)
+    setImagePreviewUrl(scan.fileData || scan.fileUrl)
+    setResults({
+      fileName: scan.fileName,
+      modality: scan.modality,
+      modelUsed: scan.modelUsed,
+      overallRisk: scan.overallRisk,
+      maxProbability: scan.maxProbability,
+      executionTimeSeconds: 0.5,
+      pathologies: scan.pathologies || [],
+      summary: scan.summary,
+      fileData: scan.fileData || scan.fileUrl
+    })
+  }
+
+  // Handle file selection preview
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0])
+      const file = e.target.files[0]
+      setSelectedFile(file)
       setError("")
       setResults(null)
+      setSelectedScanId(null)
+
+      // Read file as Data URL to guarantee preview image rendering for all image types
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImagePreviewUrl(event.target.result as string)
+        }
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -40,6 +78,7 @@ export default function ScanAnalysisPage() {
     setSelectedFile(null)
     setImagePreviewUrl(null)
     setResults(null)
+    setSelectedScanId(null)
     setError("")
   }
 
@@ -67,11 +106,40 @@ export default function ScanAnalysisPage() {
 
       const data = await res.json()
       setResults(data)
+      setSelectedFile(null)
+      if (data.scanId) {
+        setSelectedScanId(data.scanId)
+      }
+      await fetchScans()
     } catch (err: any) {
       console.error("Scan analysis error:", err)
       setError(err.message || "An error occurred while communicating with the AI microservice.")
     } finally {
       setAnalyzing(false)
+    }
+  }
+
+  const handleDeleteScan = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm("Are you sure you want to permanently delete this scan record?")) return
+
+    try {
+      const res = await fetch(`/api/scans/${id}`, {
+        method: "DELETE"
+      })
+
+      if (res.ok) {
+        if (selectedScanId === id) {
+          setSelectedScanId(null)
+          setResults(null)
+          setImagePreviewUrl(null)
+        }
+        await fetchScans()
+      } else {
+        alert("Failed to delete scan")
+      }
+    } catch (err) {
+      console.error("Delete error:", err)
     }
   }
 
@@ -88,7 +156,7 @@ export default function ScanAnalysisPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 mt-4 md:mt-8 px-3 sm:px-6 pb-16 animate-in fade-in duration-300">
+    <div className="max-w-7xl mx-auto space-y-6 mt-4 md:mt-8 px-3 sm:px-6 pb-16 animate-in fade-in duration-300">
       {/* Responsive Header Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-4">
         <div>
@@ -104,10 +172,11 @@ export default function ScanAnalysisPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Interactive File Upload & Image Preview */}
-        <Card className="lg:col-span-1 shadow-md border-border/80 flex flex-col justify-between">
-          <div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Upload Box & Saved Scans List (4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Upload Card */}
+          <Card className="shadow-md border-border/80">
             <CardHeader className="pb-3">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <UploadCloud className="h-5 w-5 text-primary" /> Upload Medical Scan
@@ -121,11 +190,11 @@ export default function ScanAnalysisPage() {
               <form onSubmit={handleAnalyze} className="space-y-4">
                 {/* Drag and Drop Zone */}
                 {!selectedFile ? (
-                  <div className="border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center hover:bg-muted/40 transition-all border-primary/30 bg-card active:scale-[0.99] cursor-pointer">
+                  <div className="border-2 border-dashed rounded-2xl p-6 text-center hover:bg-muted/40 transition-all border-primary/30 bg-card cursor-pointer">
                     <input
                       id="scan-file-input"
                       type="file"
-                      accept="image/png,image/jpeg,image/jpg,.dcm,.nii,.nii.gz"
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/bmp,.dcm,.nii,.nii.gz"
                       onChange={handleFileChange}
                       className="sr-only"
                     />
@@ -133,30 +202,30 @@ export default function ScanAnalysisPage() {
                       <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3 shadow-inner">
                         <Layers className="h-6 w-6" />
                       </div>
-                      <span className="text-sm font-bold text-foreground">Tap or Drop Medical Scan</span>
-                      <span className="text-xs text-muted-foreground mt-1">PNG, JPG, DICOM (.dcm), NIfTI (.nii)</span>
+                      <span className="text-sm font-bold text-foreground">Click or Tap to Select Scan</span>
+                      <span className="text-xs text-muted-foreground mt-1">PNG, JPG, WEBP, DICOM (.dcm), NIfTI</span>
                     </label>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Live Image Preview if Image file */}
+                    {/* Live Image Preview */}
                     {imagePreviewUrl ? (
-                      <div className="relative rounded-2xl overflow-hidden border border-border/80 bg-black/40 group max-h-56 flex items-center justify-center">
+                      <div className="relative rounded-2xl overflow-hidden border border-border/80 bg-black/50 group max-h-56 flex items-center justify-center p-2">
                         <img
                           src={imagePreviewUrl}
-                          alt="Medical Scan Preview"
-                          className="object-contain max-h-52 w-auto mx-auto rounded-lg"
+                          alt="Selected Scan Preview"
+                          className="object-contain max-h-48 w-auto mx-auto rounded-lg shadow-sm"
                         />
                         <button
                           type="button"
                           onClick={handleClearFile}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 hover:bg-destructive text-foreground hover:text-white transition-colors"
-                          title="Remove Image"
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 hover:bg-destructive text-foreground hover:text-white transition-colors shadow"
+                          title="Remove File"
                         >
                           <X className="h-4 w-4" />
                         </button>
                         <span className="absolute bottom-2 left-2 text-[10px] font-bold bg-background/90 text-foreground px-2 py-0.5 rounded shadow">
-                          Image Preview
+                          Selected Scan Preview
                         </span>
                       </div>
                     ) : (
@@ -189,7 +258,7 @@ export default function ScanAnalysisPage() {
                 >
                   {analyzing ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running PyTorch AI Inference...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running AI Inference...
                     </>
                   ) : (
                     <>
@@ -199,134 +268,239 @@ export default function ScanAnalysisPage() {
                 </Button>
               </form>
             </CardContent>
-          </div>
+          </Card>
 
-          <CardFooter className="flex-col items-start border-t pt-4 text-xs text-muted-foreground space-y-1 mt-4">
-            <div className="flex items-center gap-1 font-semibold text-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> HIPAA Compliant Diagnostics
-            </div>
-            <p className="text-[11px]">Dynamic image feature tensor analysis for accurate chest pathology evaluation.</p>
-          </CardFooter>
-        </Card>
-
-        {/* Right Column: Dynamic AI Diagnostic Results Dashboard */}
-        <Card className="lg:col-span-2 shadow-md border-border/80">
-          <CardHeader className="border-b pb-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div>
-                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5 text-primary" /> Diagnostic AI Results Dashboard
+          {/* Saved Scans Records Card */}
+          <Card className="shadow-md border-border/80">
+            <CardHeader className="pb-3 border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-primary" /> Saved Medical Scans
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
-                  14 Chest Pathologies & 3D Volumetric Segmentation Analytics
-                </CardDescription>
+                <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {scans.length}
+                </span>
               </div>
-              {results && (
-                <div className={`px-3 py-1 rounded-full border font-bold text-xs flex items-center gap-1.5 ${getRiskColor(results.overallRisk)}`}>
-                  <Activity className="h-3.5 w-3.5" /> Overall Risk: {results.overallRisk}
+            </CardHeader>
+
+            <CardContent className="p-0 max-h-96 overflow-y-auto divide-y divide-border">
+              {loadingScans ? (
+                <div className="p-6 text-center text-muted-foreground text-xs flex flex-col items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin mb-2 text-primary" /> Loading scan records...
                 </div>
-              )}
-            </div>
-          </CardHeader>
-
-          <CardContent className="pt-6">
-            {!results && !analyzing && (
-              <div className="py-16 text-center text-muted-foreground flex flex-col items-center space-y-3 px-4">
-                <div className="h-16 w-16 rounded-2xl bg-muted/60 flex items-center justify-center text-muted-foreground shadow-inner">
-                  <Activity className="h-8 w-8" />
+              ) : scans.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground text-xs">
+                  No scan records saved yet. Upload a scan above to save it.
                 </div>
-                <p className="font-bold text-base text-foreground">No Medical Scan Analyzed Yet</p>
-                <p className="text-xs max-w-sm">
-                  Upload a Chest X-Ray image or DICOM CT scan on the left to generate dynamic, image-specific AI diagnostic probabilities.
-                </p>
-              </div>
-            )}
-
-            {analyzing && (
-              <div className="py-16 flex flex-col items-center justify-center space-y-4 text-center px-4">
-                <div className="relative h-16 w-16">
-                  <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-                  <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
-                </div>
-                <div>
-                  <p className="font-bold text-lg animate-pulse text-foreground">Analyzing Image Visual Tensor...</p>
-                  <p className="text-xs text-muted-foreground mt-1">Extracting luminance distribution, opacity contrast, & 14 pathology probability scores</p>
-                </div>
-              </div>
-            )}
-
-            {results && (
-              <div className="space-y-6">
-                {/* Responsive Meta Info Header Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-card border border-border/80">
-                  <div>
-                    <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Modality</span>
-                    <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modality}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">AI Engine</span>
-                    <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modelUsed}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Primary Indicator</span>
-                    <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.pathologies?.[0]?.name || "N/A"}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Inference Speed</span>
-                    <p className="font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{results.executionTimeSeconds}s</p>
-                  </div>
-                </div>
-
-                {/* AI Summary Banner */}
-                <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-foreground">
-                  <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    <Zap className="h-3.5 w-3.5" /> Clinical AI Finding
-                  </p>
-                  <p className="text-xs sm:text-sm font-semibold mt-1">{results.summary}</p>
-                </div>
-
-                {/* Fluid 14 Pathology Probability Grid */}
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-                    <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                      Chest Pathologies Probability Map ({results.pathologies?.length || 0})
-                    </h3>
-                    <span className="text-[11px] text-muted-foreground">Thresholds: Critical &ge; 35% | Moderate &ge; 15%</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {results.pathologies?.map((item: any, idx: number) => (
-                      <div key={idx} className="p-3 rounded-2xl border bg-card flex flex-col justify-between space-y-2 shadow-sm hover:border-primary/40 transition-colors">
-                        <div className="flex items-center justify-between text-xs font-bold">
-                          <span className="text-foreground flex items-center gap-1.5 truncate">
-                            {item.status === "CRITICAL" ? (
-                              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                            ) : item.status === "MODERATE" ? (
-                              <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                            ) : (
-                              <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                            )}
-                            <span className="truncate">{item.name}</span>
-                          </span>
-                          <span className={`${item.status === "CRITICAL" ? "text-red-600 font-extrabold" : item.status === "MODERATE" ? "text-amber-600 font-bold" : "text-emerald-600 font-medium"}`}>
-                            {item.probability}%
-                          </span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${getProbBarColor(item.probability)}`}
-                            style={{ width: `${Math.min(100, Math.max(3, item.probability))}%` }}
-                          ></div>
+              ) : (
+                scans.map((s) => {
+                  const isSelected = selectedScanId === s.id
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => selectScanRecord(s)}
+                      className={`p-3.5 cursor-pointer transition-all hover:bg-accent/50 flex items-center justify-between group ${
+                        isSelected ? "bg-primary/10 border-l-4 border-primary" : ""
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 overflow-hidden">
+                        {/* Thumbnail image if available */}
+                        {s.fileData ? (
+                          <div className="h-10 w-10 rounded-lg overflow-hidden border bg-black/40 flex-shrink-0 flex items-center justify-center">
+                            <img src={s.fileData} alt={s.fileName} className="h-full w-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg border bg-muted flex items-center justify-center flex-shrink-0 text-muted-foreground">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                        )}
+                        <div className="space-y-0.5 overflow-hidden">
+                          <p className="font-bold text-xs truncate text-foreground" title={s.fileName}>
+                            {s.fileName}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <span>{s.modality}</span> • <span>{new Date(s.createdAt).toLocaleDateString()}</span>
+                          </p>
                         </div>
                       </div>
-                    ))}
+
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getRiskColor(s.overallRisk)}`}>
+                          {s.overallRisk}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => handleDeleteScan(s.id, e)}
+                          title="Delete Scan Record"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: AI Analysis Results & Image Display (8 cols) */}
+        <Card className="lg:col-span-8 shadow-md border-border/80 flex flex-col justify-between">
+          <div>
+            <CardHeader className="border-b pb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                    <Stethoscope className="h-5 w-5 text-primary" /> Diagnostic AI Scan Dashboard
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    {results ? results.fileName : "Select or upload a scan to view full AI diagnostics"}
+                  </CardDescription>
+                </div>
+                {results && (
+                  <div className={`px-3 py-1 rounded-full border font-bold text-xs flex items-center gap-1.5 ${getRiskColor(results.overallRisk)}`}>
+                    <Activity className="h-3.5 w-3.5" /> Risk: {results.overallRisk}
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+
+            <CardContent className="pt-6">
+              {!results && !analyzing && (
+                <div className="py-20 text-center text-muted-foreground flex flex-col items-center space-y-3 px-4">
+                  <div className="h-16 w-16 rounded-2xl bg-muted/60 flex items-center justify-center text-muted-foreground shadow-inner">
+                    <Activity className="h-8 w-8" />
+                  </div>
+                  <p className="font-bold text-base text-foreground">No Scan Selected</p>
+                  <p className="text-xs max-w-sm">
+                    Select a saved scan from the left sidebar or upload a new scan to view the full diagnostic report.
+                  </p>
+                </div>
+              )}
+
+              {analyzing && (
+                <div className="py-20 flex flex-col items-center justify-center space-y-4 text-center px-4">
+                  <div className="relative h-16 w-16">
+                    <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg animate-pulse text-foreground">Analyzing Scan & Visual Tensor...</p>
+                    <p className="text-xs text-muted-foreground mt-1">Extracting luminance distribution & evaluating 14 pathology probability scores</p>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {results && (
+                <div className="space-y-6">
+                  {/* Scan Display Image View & Meta info */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    {/* Scan Image Render Box */}
+                    {imagePreviewUrl ? (
+                      <div className="md:col-span-1 border rounded-2xl p-2 bg-black/60 flex items-center justify-center max-h-64 overflow-hidden">
+                        <img
+                          src={imagePreviewUrl}
+                          alt={results.fileName}
+                          className="object-contain max-h-60 w-auto mx-auto rounded-lg"
+                        />
+                      </div>
+                    ) : (
+                      <div className="md:col-span-1 border rounded-2xl p-6 bg-muted/40 flex flex-col items-center justify-center text-center text-muted-foreground">
+                        <ImageIcon className="h-10 w-10 mb-2 opacity-50" />
+                        <p className="text-xs font-semibold">3D Volume / Scan Binary</p>
+                      </div>
+                    )}
+
+                    {/* Metadata Header Cards */}
+                    <div className="md:col-span-2 grid grid-cols-2 gap-3 p-4 rounded-2xl bg-card border border-border/80">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Modality</span>
+                        <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modality}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">AI Engine</span>
+                        <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modelUsed}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Primary Indicator</span>
+                        <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.pathologies?.[0]?.name || "N/A"}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Inference Speed</span>
+                        <p className="font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{results.executionTimeSeconds}s</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI Summary Banner */}
+                  <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-foreground">
+                    <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <Zap className="h-3.5 w-3.5" /> Clinical AI Finding Summary
+                    </p>
+                    <p className="text-xs sm:text-sm font-semibold mt-1">{results.summary}</p>
+                  </div>
+
+                  {/* Fluid 14 Pathology Probability Grid */}
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+                      <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        Chest Pathologies Probability Map ({results.pathologies?.length || 0})
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground">Thresholds: Critical &ge; 35% | Moderate &ge; 15%</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {results.pathologies?.map((item: any, idx: number) => (
+                        <div key={idx} className="p-3 rounded-2xl border bg-card flex flex-col justify-between space-y-2 shadow-sm hover:border-primary/40 transition-colors">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="text-foreground flex items-center gap-1.5 truncate">
+                              {item.status === "CRITICAL" ? (
+                                <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                              ) : item.status === "MODERATE" ? (
+                                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                              )}
+                              <span className="truncate">{item.name}</span>
+                            </span>
+                            <span className={`${item.status === "CRITICAL" ? "text-red-600 font-extrabold" : item.status === "MODERATE" ? "text-amber-600 font-bold" : "text-emerald-600 font-medium"}`}>
+                              {item.probability}%
+                            </span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${getProbBarColor(item.probability)}`}
+                              style={{ width: `${Math.min(100, Math.max(3, item.probability))}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </div>
+
+          <CardFooter className="border-t pt-4 text-xs text-muted-foreground flex justify-between items-center">
+            <div className="flex items-center gap-1 font-semibold text-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> BioBytes AI Clinical Suite
+            </div>
+            {results && results.fileUrl && (
+              <a
+                href={results.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center text-xs font-bold text-primary hover:underline"
+              >
+                <Eye className="h-3.5 w-3.5 mr-1" /> View Original Scan File
+              </a>
             )}
-          </CardContent>
+          </CardFooter>
         </Card>
       </div>
     </div>
