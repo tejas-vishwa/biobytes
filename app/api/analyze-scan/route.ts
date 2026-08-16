@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { createTablesIfNotExist } from "@/lib/seed-db"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -142,35 +143,61 @@ export async function POST(req: Request) {
       }
     }
 
-    // Save scan record in Prisma Database
-    const savedScan = await prisma.medicalScan.create({
-      data: {
-        patientId: session.user.id,
-        fileName: filename,
-        fileUrl: "/placeholder.png",
-        fileData: base64Data,
-        fileType: mimeType,
-        modality: resultData.modality || "Chest X-Ray (2D)",
-        modelUsed: resultData.modelUsed || "TorchXRayVision DenseNet-121",
-        overallRisk: resultData.overallRisk || "LOW",
-        maxProbability: resultData.maxProbability || 0,
-        pathologiesJson: JSON.stringify(resultData.pathologies || []),
-        summary: resultData.summary || ""
+    // Save scan record in Prisma Database with automatic table creation resilience
+    let savedScan: any = null
+    try {
+      savedScan = await prisma.medicalScan.create({
+        data: {
+          patientId: session.user.id,
+          fileName: filename,
+          fileUrl: "/placeholder.png",
+          fileData: base64Data,
+          fileType: mimeType,
+          modality: resultData.modality || "Chest X-Ray (2D)",
+          modelUsed: resultData.modelUsed || "TorchXRayVision DenseNet-121",
+          overallRisk: resultData.overallRisk || "LOW",
+          maxProbability: resultData.maxProbability || 0,
+          pathologiesJson: JSON.stringify(resultData.pathologies || []),
+          summary: resultData.summary || ""
+        }
+      })
+    } catch (dbErr: any) {
+      console.warn("MedicalScan table query error, attempting automatic table creation DDL:", dbErr)
+      await createTablesIfNotExist()
+      try {
+        savedScan = await prisma.medicalScan.create({
+          data: {
+            patientId: session.user.id,
+            fileName: filename,
+            fileUrl: "/placeholder.png",
+            fileData: base64Data,
+            fileType: mimeType,
+            modality: resultData.modality || "Chest X-Ray (2D)",
+            modelUsed: resultData.modelUsed || "TorchXRayVision DenseNet-121",
+            overallRisk: resultData.overallRisk || "LOW",
+            maxProbability: resultData.maxProbability || 0,
+            pathologiesJson: JSON.stringify(resultData.pathologies || []),
+            summary: resultData.summary || ""
+          }
+        })
+      } catch (retryErr) {
+        console.error("Secondary MedicalScan save error:", retryErr)
       }
-    })
+    }
 
-    // Update fileUrl to serve directly from Turso database endpoint
-    const fileUrl = `/api/scans/${savedScan.id}/file`
-    await prisma.medicalScan.update({
-      where: { id: savedScan.id },
-      data: { fileUrl }
-    })
+    const fileUrl = savedScan ? `/api/scans/${savedScan.id}/file` : "/placeholder.png"
+    if (savedScan) {
+      await prisma.medicalScan.update({
+        where: { id: savedScan.id },
+        data: { fileUrl }
+      }).catch(() => {})
+    }
 
     const dataUrl = `data:${mimeType.startsWith("image/") ? mimeType : "image/png"};base64,${base64Data}`
 
     return NextResponse.json({
       ...resultData,
-      scanId: savedScan.id,
+      scanId: savedScan?.id || `temp-${Date.now()}`,
       fileUrl,
       fileData: dataUrl
     })

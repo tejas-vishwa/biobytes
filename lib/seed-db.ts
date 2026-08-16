@@ -129,6 +129,38 @@ export async function createTablesIfNotExist() {
       FOREIGN KEY ("reportId") REFERENCES "Report" ("id") ON DELETE CASCADE,
       FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS "Prescription" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "fileName" TEXT NOT NULL,
+      "fileUrl" TEXT,
+      "fileData" TEXT,
+      "fileType" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'PARSED',
+      "rawText" TEXT,
+      "doctorName" TEXT,
+      "medicinesJson" TEXT,
+      "symptomsJson" TEXT,
+      "vitalsJson" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
+    `CREATE TABLE IF NOT EXISTS "MedicalScan" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "fileName" TEXT NOT NULL,
+      "fileUrl" TEXT,
+      "fileData" TEXT,
+      "fileType" TEXT,
+      "modality" TEXT,
+      "modelUsed" TEXT,
+      "overallRisk" TEXT,
+      "maxProbability" REAL,
+      "pathologiesJson" TEXT,
+      "summary" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE
+    );`,
     `CREATE TABLE IF NOT EXISTS "ActivityLog" (
       "id" TEXT NOT NULL PRIMARY KEY,
       "action" TEXT NOT NULL,
@@ -178,9 +210,6 @@ export async function seedDatabase() {
 
     const biomarkers = await prisma.biomarkerDefinition.findMany()
 
-    // Pre-computed valid bcrypt hashes for fast non-blocking execution:
-    // demo1234 -> $2b$10$9Te2u47R.K/ggejiePt7m.h6FsxZ6n.QoRfeT8acNEIhVbn3qGoki
-    // admin1234 -> $2b$10$d2o0hvW48JawCXP1pVaUD.2TCfwqR8nDVbh148Vs3wFNREuxMYOKW
     const demoPasswordHash = "$2b$10$9Te2u47R.K/ggejiePt7m.h6FsxZ6n.QoRfeT8acNEIhVbn3qGoki"
     const adminPasswordHash = "$2b$10$d2o0hvW48JawCXP1pVaUD.2TCfwqR8nDVbh148Vs3wFNREuxMYOKW"
     const superAdminPasswordHash = "$2b$10$9Te2u47R.K/ggejiePt7m.h6FsxZ6n.QoRfeT8acNEIhVbn3qGoki"
@@ -191,13 +220,13 @@ export async function seedDatabase() {
       create: { email: "priya@demo.com", passwordHash: demoPasswordHash, name: "Priya Sharma", role: "PATIENT" }
     })
 
-    const sankalp = await prisma.user.upsert({
+    await prisma.user.upsert({
       where: { email: "sankalp@demo.com" },
       update: { passwordHash: demoPasswordHash },
       create: { email: "sankalp@demo.com", passwordHash: demoPasswordHash, name: "Sankalp Verma", role: "PATIENT" }
     })
 
-    const utkarsh = await prisma.user.upsert({
+    await prisma.user.upsert({
       where: { email: "utkarsh@demo.com" },
       update: { passwordHash: demoPasswordHash },
       create: { email: "utkarsh@demo.com", passwordHash: demoPasswordHash, name: "Utkarsh Singh", role: "PATIENT" }
@@ -233,7 +262,6 @@ export async function seedDatabase() {
       create: { email: "doctor@demo.com", passwordHash: demoPasswordHash, name: "Dr. Rahul Verma", role: "DOCTOR" }
     })
 
-    // Doctor profile
     const docProfile = await prisma.doctorProfile.findUnique({ where: { userId: doctor.id } })
     if (!docProfile) {
       await prisma.doctorProfile.create({
@@ -241,7 +269,6 @@ export async function seedDatabase() {
       })
     }
 
-    // 3. Seed Lab Partners
     const labData = [
       { name: 'Dr. Lal PathLabs', commissionPct: 15.0, bookingUrl: 'https://www.lalpathlabs.com' },
       { name: 'SRL Diagnostics', commissionPct: 12.0, bookingUrl: 'https://www.srlworld.com' },
@@ -253,61 +280,6 @@ export async function seedDatabase() {
       if (!existingLab) {
         await prisma.labPartner.create({ data: l })
       }
-    }
-
-    // 4. Seed Reports & Metrics for Priya
-    const now = new Date()
-    const existingPriyaReport = await prisma.report.findFirst({ where: { patientId: priya.id } })
-    if (!existingPriyaReport) {
-      const report1 = await prisma.report.create({
-        data: {
-          patientId: priya.id,
-          fileName: 'health_check_july.pdf',
-          fileUrl: '/uploads/health_check_july.pdf',
-          status: 'PARSED',
-          reportDate: now,
-          labName: 'Dr. Lal PathLabs',
-        }
-      })
-
-      const hdl = biomarkers.find(b => b.code === 'HDL')
-      const ldl = biomarkers.find(b => b.code === 'LDL')
-      const chol = biomarkers.find(b => b.code === 'CHOLESTEROL_TOTAL')
-      const hba1c = biomarkers.find(b => b.code === 'HBA1C')
-
-      if (hdl && ldl && chol && hba1c) {
-        await prisma.extractedMetric.createMany({
-          data: [
-            { reportId: report1.id, biomarkerId: hdl.id, value: 45, unit: hdl.unit, refMin: hdl.refMin, refMax: hdl.refMax, isAbnormal: false },
-            { reportId: report1.id, biomarkerId: ldl.id, value: 140, unit: ldl.unit, refMin: ldl.refMin, refMax: ldl.refMax, isAbnormal: true },
-            { reportId: report1.id, biomarkerId: chol.id, value: 220, unit: chol.unit, refMin: chol.refMin, refMax: chol.refMax, isAbnormal: true },
-            { reportId: report1.id, biomarkerId: hba1c.id, value: 5.8, unit: hba1c.unit, refMin: hba1c.refMin, refMax: hba1c.refMax, isAbnormal: true },
-          ]
-        })
-      }
-
-      await prisma.healthAlert.create({
-        data: {
-          patientId: priya.id,
-          severity: 'WARNING',
-          message: 'Your recent blood reports show abnormalities in LDL Cholesterol (140 mg/dL). Please connect with a doctor.',
-        }
-      })
-    }
-
-    // 5. Seed Doctor Access Code
-    const existingCode = await prisma.doctorAccessCode.findFirst({ where: { patientId: priya.id } })
-    if (!existingCode) {
-      const expiry = new Date(now)
-      expiry.setDate(now.getDate() + 7)
-      await prisma.doctorAccessCode.create({
-        data: {
-          patientId: priya.id,
-          code: '123456',
-          expiresAt: expiry,
-          maxUses: 10,
-        }
-      })
     }
 
     return { success: true, message: "Database successfully created and seeded with demo accounts!" }

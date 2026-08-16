@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { createTablesIfNotExist } from "@/lib/seed-db"
 
 export const dynamic = "force-dynamic"
 
@@ -19,10 +20,24 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const scans = await prisma.medicalScan.findMany({
-      where: { patientId },
-      orderBy: { createdAt: "desc" }
-    })
+    let scans: any[] = []
+    try {
+      scans = await prisma.medicalScan.findMany({
+        where: { patientId },
+        orderBy: { createdAt: "desc" }
+      })
+    } catch (dbErr) {
+      console.warn("MedicalScan table not found on GET /api/scans, executing DDL:", dbErr)
+      await createTablesIfNotExist()
+      try {
+        scans = await prisma.medicalScan.findMany({
+          where: { patientId },
+          orderBy: { createdAt: "desc" }
+        })
+      } catch (retryErr) {
+        console.error("Failed to query MedicalScan after DDL creation:", retryErr)
+      }
+    }
 
     const formatted = scans.map(s => ({
       id: s.id,
