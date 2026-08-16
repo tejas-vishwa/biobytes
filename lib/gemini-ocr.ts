@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai"
 import Tesseract from "tesseract.js"
 import { extractText } from "unpdf"
 import { BIOMARKERS_100 } from "./biomarkers100"
@@ -53,7 +52,6 @@ export function sanitizeMedications(medications: ExtractedMedication[]): Extract
     // Clean dosage: if dosage is just an item number like "1.", "2.", "5", "7" without units, nullify or fix it
     let dosage = m.dosage ? m.dosage.trim() : null
     if (dosage && (/^[\d\.\s]+$/.test(dosage) && parseFloat(dosage) < 20)) {
-      // Single digit number without mg/g/ml unit is usually an item list number, not a dosage
       dosage = null
     }
 
@@ -74,154 +72,18 @@ export function sanitizeMedications(medications: ExtractedMedication[]): Extract
   return cleanList
 }
 
-export const PRESCRIPTION_JSON_SCHEMA = {
-  type: "object",
-  properties: {
-    documentType: {
-      type: "string",
-      enum: ["prescription"],
-      description: "Classified strictly as a doctor prescription document."
-    },
-    patient: {
-      type: "object",
-      properties: {
-        name: { type: "string", nullable: true },
-        age: { type: "integer", nullable: true },
-        gender: { type: "string", nullable: true }
-      }
-    },
-    doctor: {
-      type: "object",
-      properties: {
-        name: { type: "string", nullable: true },
-        date: { type: "string", nullable: true }
-      }
-    },
-    medications: {
-      type: "array",
-      description: "Extract ONLY real pharmaceutical medicine/drug names. DO NOT include section headers, list numbers, instructions ('after meal', 'for 7 days'), or timing notes as medicines.",
-      items: {
-        type: "object",
-        properties: {
-          medicineName: { 
-            type: "string", 
-            description: "The actual brand name or generic drug name (e.g. Azithromycin, Dolo, Pan, Darolac)." 
-          },
-          dosage: { 
-            type: "string", 
-            nullable: true, 
-            description: "Dosage strength with unit e.g. 500mg, 650mg, 40mg, 1 capsule. DO NOT put item list numbers here." 
-          },
-          frequency: { 
-            type: "string", 
-            nullable: true, 
-            description: "Administration frequency e.g. 1-0-1, BD, TDS, once daily, SOS." 
-          },
-          duration: { 
-            type: "string", 
-            nullable: true, 
-            description: "Duration e.g. 5 days, 1 week." 
-          }
-        },
-        required: ["medicineName"]
-      }
-    },
-    symptoms: {
-      type: "array",
-      description: "Extract list of chief complaints, symptoms, or diagnosis notes",
-      items: { type: "string" }
-    },
-    vitals: {
-      type: "object",
-      description: "Extract vitals recorded on prescription",
-      properties: {
-        temperature: { type: "string", nullable: true },
-        bp: { type: "string", nullable: true },
-        pulse: { type: "string", nullable: true },
-        weight: { type: "string", nullable: true }
-      }
-    }
-  },
-  required: ["documentType", "patient", "medications"]
-}
-
-export const PRESCRIPTION_SYSTEM_PROMPT = `
-You are an advanced medical prescription OCR and clinical data extraction engine. Your task is to analyze doctor prescriptions with extreme precision.
-
-STRICT MEDICAL EXTRACTION RULES:
-1. MEDICATIONS ONLY: Extract ONLY actual pharmaceutical drug names (brand names or generic names, e.g. Azithromycin, Dolo, Pan 40, Darolac, Paracetamol, Amoxicillin).
-2. DO NOT EXTRACT NON-DRUG TEXT: Do NOT treat section titles ("Instructions", "Advice", "Diagnosis", "Notes"), timing directions ("after meal", "before food", "on empty stomach"), prepositions ("for", "every", "with"), or item list numbers ("1.", "2.", "3.", "4.") as medicine names.
-3. DOSAGE vs ITEM NUMBER: "500mg", "650mg", "40mg" are dosages. Item list numbers like "1.", "2.", "5", "7" are NOT dosages. If no dosage unit (mg, ml, g, cap) is specified, leave dosage as null.
-4. PATIENT & DOCTOR INFO: Extract patient name, age, gender, doctor name (e.g. Dr. Rahul Verma), and prescription date.
-5. NO GUESSING / HALLUCINATION: If a word is illegible or handwriting is unclear, output null. Never guess medical data.
-6. FORMAT: Return strictly valid JSON adhering to the provided JSON Schema.
-`
-
 /**
- * Main entrypoint to extract structured prescription data using Gemini API Structured Outputs.
- * High precision, intelligent filtering, and structured validation.
+ * Main entrypoint to extract structured prescription data using local OCR parsing and intelligent sanitization.
  */
 export async function extractPrescriptionData(
   buffer: Buffer,
   mimeType: string
 ): Promise<ExtractedMedicalData> {
-  const apiKey = process.env.GEMINI_API_KEY
-
-  if (apiKey) {
-    try {
-      const ai = new GoogleGenAI({ apiKey })
-      const base64Data = buffer.toString("base64")
-
-      let effectiveMimeType = mimeType || "application/pdf"
-      if (!effectiveMimeType.includes("pdf") && !effectiveMimeType.startsWith("image/")) {
-        effectiveMimeType = "image/jpeg"
-      }
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: PRESCRIPTION_SYSTEM_PROMPT },
-              {
-                inlineData: {
-                  mimeType: effectiveMimeType,
-                  data: base64Data
-                }
-              }
-            ]
-          }
-        ],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: PRESCRIPTION_JSON_SCHEMA as any,
-          temperature: 0.0
-        }
-      })
-
-      const rawText = response.text ? response.text() : ""
-      if (rawText) {
-        const parsed = JSON.parse(rawText)
-        const sanitizedMeds = sanitizeMedications(parsed.medications || [])
-        return {
-          documentType: "prescription",
-          patient: parsed.patient || null,
-          doctor: parsed.doctor || null,
-          medications: sanitizedMeds,
-          biomarkers: null
-        }
-      }
-    } catch (error) {
-      console.warn("Gemini Structured Outputs prescription extraction failed, falling back to local OCR:", error)
-    }
-  }
-
   return await fallbackPrescriptionExtraction(buffer, mimeType)
 }
 
 /**
- * General entrypoint for medical document extraction.
+ * General entrypoint for medical document extraction using local parsing engines.
  */
 export async function extractMedicalData(
   buffer: Buffer,
@@ -231,7 +93,7 @@ export async function extractMedicalData(
 }
 
 /**
- * Local OCR fallback for prescriptions with intelligent line-by-line drug matching.
+ * Local OCR extraction for prescriptions with line-by-line drug pattern matching.
  */
 async function fallbackPrescriptionExtraction(
   buffer: Buffer,
