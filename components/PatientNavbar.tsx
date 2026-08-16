@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, Menu, X, ChevronRight, User, Activity } from "lucide-react"
+import { LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, Menu, X, ChevronRight, User, Pill, Activity } from "lucide-react"
 import { QurixLogo } from "@/components/QurixLogo"
 import { ThemeToggle } from "@/components/ThemeToggle"
 
@@ -18,6 +18,7 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
   const navItems = [
     { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard, desc: "Health overview & metrics" },
     { name: "Upload", href: "/patient/upload", icon: UploadCloud, desc: "Unified Hub: Reports, Prescriptions & Scans" },
+    { name: "Prescriptions", href: "/patient/prescriptions", icon: Pill, desc: "Medicines & OCR symptoms" },
     { name: "Scan AI", href: "/patient/scan-analysis", icon: Activity, desc: "X-Ray & CT/MRI AI analysis" },
     { name: "Trends", href: "/patient/trends", icon: LineChart, desc: "100-test longitudinal charts" },
     { name: "Appointments", href: "/patient/appointments", icon: Calendar, desc: "Doctor bookings & queues" },
