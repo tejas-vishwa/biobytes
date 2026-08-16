@@ -4,11 +4,11 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UploadCloud, FileText, Camera, X, Pill, Activity, Zap, CheckCircle2, AlertTriangle, FileSpreadsheet, Sparkles, Loader2 } from "lucide-react"
+import { UploadCloud, FileText, Camera, X, Pill, Activity, CheckCircle2, AlertTriangle, FileSpreadsheet, Loader2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
-type DocumentCategory = "AUTO" | "REPORT" | "PRESCRIPTION" | "SCAN"
+type DocumentCategory = "REPORT" | "PRESCRIPTION" | "SCAN"
 
 interface ProcessedFileItem {
   file: File
@@ -19,9 +19,9 @@ interface ProcessedFileItem {
   classifying: boolean
 }
 
-export default function AdvancedUnifiedUploadPage() {
+export default function UnifiedUploadPage() {
   const router = useRouter()
-  const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("AUTO")
+  const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("REPORT")
   const [fileItems, setFileItems] = useState<ProcessedFileItem[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -52,7 +52,6 @@ export default function AdvancedUnifiedUploadPage() {
       console.warn("Classification note:", err)
     }
 
-    // Heuristic fallback
     const fname = file.name.toLowerCase()
     if (fname.endsWith(".dcm") || fname.endsWith(".nii") || /xray|scan|ct|mri/i.test(fname)) {
       return { file, detectedType: "SCAN", typeName: "AI Diagnostic Scan (X-Ray/CT)", confidencePct: 90, reason: "DICOM/Scan Signature", classifying: false }
@@ -70,16 +69,15 @@ export default function AdvancedUnifiedUploadPage() {
       
       const initialItems: ProcessedFileItem[] = newFiles.map(f => ({
         file: f,
-        detectedType: "REPORT",
-        typeName: "Analyzing with AI...",
-        confidencePct: 0,
-        reason: "Scanning visual & text features...",
+        detectedType: selectedCategory,
+        typeName: selectedCategory === "SCAN" ? "AI Diagnostic Scan" : selectedCategory === "PRESCRIPTION" ? "Doctor Prescription" : "Lab Report",
+        confidencePct: 95,
+        reason: "User Category Selection",
         classifying: true
       }))
 
       setFileItems(prev => [...prev, ...initialItems])
 
-      // Perform real-time AI classification on each file
       for (let i = 0; i < newFiles.length; i++) {
         const file = newFiles[i]
         const classified = await classifyFile(file)
@@ -100,19 +98,7 @@ export default function AdvancedUnifiedUploadPage() {
     if (category === "PRESCRIPTION") {
       return { endpoint: "/api/prescriptions/upload", redirect: "/patient/prescriptions", displayType: "Doctor Prescription" }
     }
-    if (category === "SCAN") {
-      return { endpoint: "/api/analyze-scan", redirect: "/patient/scan-analysis", displayType: "AI Diagnostic Scan" }
-    }
-
-    // AUTO MODE: Driven by Advanced AI Classification
-    if (item.detectedType === "SCAN") {
-      return { endpoint: "/api/analyze-scan", redirect: "/patient/scan-analysis", displayType: "AI Diagnostic Scan" }
-    }
-    if (item.detectedType === "PRESCRIPTION") {
-      return { endpoint: "/api/prescriptions/upload", redirect: "/patient/prescriptions", displayType: "Doctor Prescription" }
-    }
-
-    return { endpoint: "/api/extract-report", redirect: "/patient/dashboard", displayType: "Biomarker Lab Report" }
+    return { endpoint: "/api/analyze-scan", redirect: "/patient/scan-analysis", displayType: "AI Diagnostic Scan" }
   }
 
   const handleUpload = async () => {
@@ -169,90 +155,69 @@ export default function AdvancedUnifiedUploadPage() {
       {/* Header Banner */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
-          <UploadCloud className="h-7 w-7 sm:h-8 sm:w-8 text-primary" /> Advanced AI Document Upload Hub
+          <UploadCloud className="h-7 w-7 sm:h-8 sm:w-8 text-primary" /> Medical Document Upload Hub
         </h1>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Deep learning visual & OCR classifier automatically differentiates between <strong>Lab Reports</strong>, <strong>Doctor Prescriptions</strong>, and <strong>AI Diagnostic Scans</strong>.
+          Upload and extract data from your <strong>Lab Reports</strong>, <strong>Doctor Prescriptions</strong>, and <strong>AI Diagnostic Scans</strong>.
         </p>
       </div>
 
-      {/* Category Selection Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button
-          type="button"
-          onClick={() => setSelectedCategory("AUTO")}
-          className={`p-3.5 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
-            selectedCategory === "AUTO"
-              ? "bg-primary/15 border-primary text-primary font-bold shadow"
-              : "bg-card border-border/80 text-muted-foreground hover:bg-accent/50"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
-            {selectedCategory === "AUTO" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-          </div>
-          <div>
-            <p className="text-xs sm:text-sm font-extrabold text-foreground flex items-center gap-1">
-              Auto-Detect <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.2 rounded-full font-bold">AI v2</span>
-            </p>
-            <p className="text-[10px] text-muted-foreground">Smart Document Classifier</p>
-          </div>
-        </button>
-
+      {/* Category Selection Tabs (Lab Reports, Prescriptions, AI Scans) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button
           type="button"
           onClick={() => setSelectedCategory("REPORT")}
-          className={`p-3.5 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
+          className={`p-4 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
             selectedCategory === "REPORT"
               ? "bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold shadow"
               : "bg-card border-border/80 text-muted-foreground hover:bg-accent/50"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <FileSpreadsheet className="h-5 w-5 text-emerald-500" />
-            {selectedCategory === "REPORT" && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+            <FileSpreadsheet className="h-6 w-6 text-emerald-500" />
+            {selectedCategory === "REPORT" && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
           </div>
           <div>
-            <p className="text-xs sm:text-sm font-extrabold text-foreground">Lab Reports</p>
-            <p className="text-[10px] text-muted-foreground">100+ Biomarkers & CBC</p>
+            <p className="text-sm font-extrabold text-foreground">Lab Reports</p>
+            <p className="text-xs text-muted-foreground mt-0.5">100+ Biomarkers, Blood Tests & CBC</p>
           </div>
         </button>
 
         <button
           type="button"
           onClick={() => setSelectedCategory("PRESCRIPTION")}
-          className={`p-3.5 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
+          className={`p-4 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
             selectedCategory === "PRESCRIPTION"
               ? "bg-indigo-500/15 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-bold shadow"
               : "bg-card border-border/80 text-muted-foreground hover:bg-accent/50"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <Pill className="h-5 w-5 text-indigo-500" />
-            {selectedCategory === "PRESCRIPTION" && <CheckCircle2 className="h-4 w-4 text-indigo-500" />}
+            <Pill className="h-6 w-6 text-indigo-500" />
+            {selectedCategory === "PRESCRIPTION" && <CheckCircle2 className="h-5 w-5 text-indigo-500" />}
           </div>
           <div>
-            <p className="text-xs sm:text-sm font-extrabold text-foreground">Prescriptions</p>
-            <p className="text-[10px] text-muted-foreground">Medicines & Symptoms</p>
+            <p className="text-sm font-extrabold text-foreground">Prescriptions</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Medicines, Dosages & Symptoms</p>
           </div>
         </button>
 
         <button
           type="button"
           onClick={() => setSelectedCategory("SCAN")}
-          className={`p-3.5 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
+          className={`p-4 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
             selectedCategory === "SCAN"
               ? "bg-purple-500/15 border-purple-500 text-purple-600 dark:text-purple-400 font-bold shadow"
               : "bg-card border-border/80 text-muted-foreground hover:bg-accent/50"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
-            <Activity className="h-5 w-5 text-purple-500" />
-            {selectedCategory === "SCAN" && <CheckCircle2 className="h-4 w-4 text-purple-500" />}
+            <Activity className="h-6 w-6 text-purple-500" />
+            {selectedCategory === "SCAN" && <CheckCircle2 className="h-5 w-5 text-purple-500" />}
           </div>
           <div>
-            <p className="text-xs sm:text-sm font-extrabold text-foreground">AI Scans</p>
-            <p className="text-[10px] text-muted-foreground">X-Rays & 3D CT/MRI</p>
+            <p className="text-sm font-extrabold text-foreground">AI Scans</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Chest X-Rays & 3D CT/MRI Scans</p>
           </div>
         </button>
       </div>
@@ -261,7 +226,7 @@ export default function AdvancedUnifiedUploadPage() {
       <Card className="shadow-md border-border/80">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <UploadCloud className="h-5 w-5 text-primary" /> Select Medical Files
+            <UploadCloud className="h-5 w-5 text-primary" /> Select {selectedCategory === "SCAN" ? "Medical Scan" : selectedCategory === "PRESCRIPTION" ? "Prescription" : "Lab Report"} Files
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
             Supports PDFs, Images (PNG, JPG, WEBP), and DICOM Medical Scans (.dcm, .nii).
@@ -286,12 +251,11 @@ export default function AdvancedUnifiedUploadPage() {
             </label>
           </div>
 
-          {/* Selected files queue with live AI classification badges */}
+          {/* Selected files queue */}
           {fileItems.length > 0 && !uploading && (
             <div className="space-y-2">
               <p className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center justify-between">
                 <span>Selected Files ({fileItems.length}):</span>
-                <span className="text-[11px] text-muted-foreground font-normal">Real-Time AI Document Inspection</span>
               </p>
               <div className="max-h-72 overflow-y-auto space-y-2 border rounded-2xl p-2 bg-muted/20">
                 {fileItems.map((item, idx) => {
@@ -302,27 +266,15 @@ export default function AdvancedUnifiedUploadPage() {
                         <FileText className="h-5 w-5 text-primary flex-shrink-0" />
                         <div className="truncate">
                           <p className="text-xs font-bold truncate text-foreground">{item.file.name}</p>
-                          
-                          {/* AI Detection Badge */}
-                          {item.classifying ? (
-                            <span className="text-[10px] text-amber-500 font-semibold flex items-center gap-1 mt-0.5 animate-pulse">
-                              <Loader2 className="h-3 w-3 animate-spin" /> AI Analyzing visual & text features...
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
-                                item.detectedType === "SCAN"
-                                  ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
-                                  : item.detectedType === "PRESCRIPTION"
-                                  ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
-                                  : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                              }`}>
-                                {item.detectedType === "SCAN" ? "🩻 " : item.detectedType === "PRESCRIPTION" ? "💊 " : "🧪 "}
-                                AI Classification: {item.typeName} ({item.confidencePct}%)
-                              </span>
-                              <span className="text-[10px] text-muted-foreground truncate">({item.reason})</span>
-                            </div>
-                          )}
+                          <span className={`inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border mt-1 ${
+                            selectedCategory === "SCAN"
+                              ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
+                              : selectedCategory === "PRESCRIPTION"
+                              ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+                              : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                          }`}>
+                            Processing as: {target.displayType}
+                          </span>
                         </div>
                       </div>
 
@@ -361,7 +313,7 @@ export default function AdvancedUnifiedUploadPage() {
         </CardContent>
         <CardFooter>
           <Button onClick={handleUpload} disabled={fileItems.length === 0 || uploading} className="w-full h-12 text-base font-bold shadow-md rounded-xl">
-            {uploading ? `Processing ${uploadProgress}/${fileItems.length}...` : `Upload & Process ${fileItems.length} Medical File${fileItems.length > 1 ? "s" : ""}`}
+            {uploading ? `Processing ${uploadProgress}/${fileItems.length}...` : `Upload & Process ${fileItems.length} ${selectedCategory === "SCAN" ? "Medical Scan" : selectedCategory === "PRESCRIPTION" ? "Prescription" : "Lab Report"}${fileItems.length > 1 ? "s" : ""}`}
           </Button>
         </CardFooter>
       </Card>
