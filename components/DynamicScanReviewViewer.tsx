@@ -34,9 +34,16 @@ export default function DynamicScanReviewViewer({
     );
   }
 
+  const uniqueAnomalies = currentScan.anomalies?.filter((anomaly, index, self) =>
+    index === self.findIndex((t) => (
+      t.region === anomaly.region || 
+      JSON.stringify(t.box) === JSON.stringify(anomaly.box)
+    ))
+  ) || [];
+
   const selectedAnomaly =
-    currentScan.anomalies.find((a) => a.id === selectedAnomalyId) ||
-    currentScan.anomalies[0] ||
+    uniqueAnomalies.find((a) => a.id === selectedAnomalyId) ||
+    uniqueAnomalies[0] ||
     null;
 
   return (
@@ -85,8 +92,8 @@ export default function DynamicScanReviewViewer({
               />
 
               {/* Dynamically mapped boxes from the API */}
-              {currentScan.anomalies && currentScan.anomalies.length > 0 ? (
-                currentScan.anomalies.map((item) => {
+              {uniqueAnomalies && uniqueAnomalies.length > 0 ? (
+                uniqueAnomalies.map((item) => {
                   const isSelected = selectedAnomaly?.id === item.id;
                   return (
                     <div
@@ -130,7 +137,7 @@ export default function DynamicScanReviewViewer({
             </h3>
 
             <div className="space-y-3">
-              {currentScan.anomalies.map((anomaly) => {
+              {uniqueAnomalies.map((anomaly) => {
                 const isSelected = selectedAnomaly?.id === anomaly.id;
                 return (
                   <div

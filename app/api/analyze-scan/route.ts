@@ -196,11 +196,13 @@ You MUST return your response as a raw JSON object strictly matching this schema
   ]
 }
 
-CRITICAL RULES:
-1. If the scan is a leg, hand, or bone, DO NOT include chest pathologies.
-2. Carefully look for advanced joint diseases, such as Rheumatoid Arthritis, severe ulnar drift, and Boutonnière/Swan-neck deformities (especially on the middle finger / 3rd digit).
-3. If you detect an anomaly, you must provide its location using normalized bounding box coordinates in the format [ymin, xmin, ymax, xmax] where 0 is the top/left edge and 1000 is the bottom/right edge. Map this to the JSON key 'box_1000'.
-4. If no anomaly is found, return an empty array [] for "anomalies".
+CRITICAL DIAGNOSTIC RULES:
+1. DO NOT default to "Fracture". Carefully evaluate for Joint Subluxation, Dislocation, Rheumatoid Arthritis, and Erosive Changes.
+2. SPATIAL GROUNDING: If an anomaly is present, provide a MAXIMUM of ONE bounding box per distinct anatomical issue. DO NOT output overlapping or duplicate boxes.
+3. Format coordinates exactly as [ymin, xmin, ymax, xmax] on a scale of 0 to 1000. Map this to the JSON key 'box_1000'.
+4. If the image shows severe joint deformity without acute bone breaks, label it "Severe Arthropathy/Subluxation", NOT a fracture.
+5. If the scan is a leg, hand, or bone, DO NOT include chest pathologies.
+6. If no anomaly is found, return an empty array [] for "anomalies".
           `
           const unifiedResponse = await withTimeout(ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -370,6 +372,9 @@ CRITICAL RULES:
               if (a.box_1000) {
                 return {
                   ...a,
+                  region: a.region || a.label || "Anomaly",
+                  finding: a.finding || a.label || "Visual anomaly detected",
+                  severity: (a.confidence || 90) >= 70 ? "Severe" : "Moderate",
                   box: {
                     x: (a.box_1000[1] / 1000) * 100, // xmin %
                     y: (a.box_1000[0] / 1000) * 100, // ymin %
