@@ -50,22 +50,28 @@ export default function ScanAnalysisPage() {
   }
 
   const selectScanRecord = (scan: any) => {
+    // Force complete UI unmount to clear stale boxes/state
+    setResults(null)
+    setImagePreviewUrl(null)
     setSelectedScanId(scan.id)
-    setImagePreviewUrl(scan.fileData || scan.fileUrl)
-    setResults({
-      fileName: scan.fileName,
-      modality: scan.modality,
-      modelUsed: scan.modelUsed,
-      overallRisk: scan.overallRisk,
-      maxProbability: scan.maxProbability,
-      executionTimeSeconds: 0.5,
-      pathologies: scan.pathologies || [],
-      bounding_boxes: scan.bounding_boxes || [],
-      summary: scan.summary,
-      detailedReport: scan.detailedReport || null,
-      fileData: scan.fileData || scan.fileUrl,
-      dynamicMskData: scan.dynamicMskData || null
-    })
+    
+    setTimeout(() => {
+      setImagePreviewUrl(scan.fileData || scan.fileUrl)
+      setResults({
+        fileName: scan.fileName,
+        modality: scan.modality,
+        modelUsed: scan.modelUsed,
+        overallRisk: scan.overallRisk,
+        maxProbability: scan.maxProbability,
+        executionTimeSeconds: 0.5,
+        pathologies: scan.pathologies || [],
+        bounding_boxes: scan.bounding_boxes || [],
+        summary: scan.summary,
+        detailedReport: scan.detailedReport || null,
+        fileData: scan.fileData || scan.fileUrl,
+        dynamicMskData: scan.dynamicMskData || null
+      })
+    }, 10)
   }
 
   // Handle file selection preview

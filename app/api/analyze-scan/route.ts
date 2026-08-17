@@ -191,7 +191,7 @@ You MUST return your response as a raw JSON object strictly matching this schema
       "id": "string",
       "label": "string (What is the specific issue?)",
       "confidence": number (0-100),
-      "box": { "x": number (0-100 percentage), "y": number, "width": number, "height": number }
+      "box_1000": [0, 0, 1000, 1000] // [ymin, xmin, ymax, xmax]
     }
   ]
 }
@@ -199,7 +199,7 @@ You MUST return your response as a raw JSON object strictly matching this schema
 CRITICAL RULES:
 1. If the scan is a leg, hand, or bone, DO NOT include chest pathologies.
 2. Carefully look for advanced joint diseases, such as Rheumatoid Arthritis, severe ulnar drift, and Boutonnière/Swan-neck deformities (especially on the middle finger / 3rd digit).
-3. You MUST provide the "anomalies" bounding box coordinates (x, y, width, height) as percentages (0 to 100) indicating exactly where the most severe pathology is on the image. For example, if the middle finger PIP joint is dislocated, box it perfectly.
+3. If you detect an anomaly, you must provide its location using normalized bounding box coordinates in the format [ymin, xmin, ymax, xmax] where 0 is the top/left edge and 1000 is the bottom/right edge. Map this to the JSON key 'box_1000'.
 4. If no anomaly is found, return an empty array [] for "anomalies".
           `
           const unifiedResponse = await withTimeout(ai.models.generateContent({
@@ -366,17 +366,44 @@ CRITICAL RULES:
           dynamicMskData = {
             scanTitle: unifiedGeminiData.dynamic_map_title,
             modality: unifiedGeminiData.dynamic_map_title,
-            anomalies: unifiedGeminiData.anomalies
+            anomalies: unifiedGeminiData.anomalies.map((a: any) => {
+              if (a.box_1000) {
+                return {
+                  ...a,
+                  box: {
+                    x: (a.box_1000[1] / 1000) * 100, // xmin %
+                    y: (a.box_1000[0] / 1000) * 100, // ymin %
+                    width: ((a.box_1000[3] - a.box_1000[1]) / 1000) * 100,
+                    height: ((a.box_1000[2] - a.box_1000[0]) / 1000) * 100
+                  }
+                }
+              }
+              return a;
+            })
           }
           
-          bounding_boxes = unifiedGeminiData.anomalies.map((a: any) => ({
-            label: a.label,
-            confidence: (a.confidence || 90) / 100.0,
-            x_min: a.box.x,
-            y_min: a.box.y,
-            x_max: a.box.x + a.box.width,
-            y_max: a.box.y + a.box.height
-          }))
+          bounding_boxes = unifiedGeminiData.anomalies.map((a: any) => {
+            if (a.box_1000 && Array.isArray(a.box_1000)) {
+              return {
+                label: a.label,
+                confidence: (a.confidence || 90) / 100.0,
+                x_min: a.box_1000[1],
+                y_min: a.box_1000[0],
+                x_max: a.box_1000[3],
+                y_max: a.box_1000[2]
+              }
+            } else if (a.box) {
+              return {
+                label: a.label,
+                confidence: (a.confidence || 90) / 100.0,
+                x_min: a.box.x * 10.24,
+                y_min: a.box.y * 10.24,
+                x_max: (a.box.x + a.box.width) * 10.24,
+                y_max: (a.box.y + a.box.height) * 10.24
+              }
+            }
+            return null
+          }).filter(Boolean)
         }
       }
 

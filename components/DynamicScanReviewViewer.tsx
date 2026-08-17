@@ -85,30 +85,38 @@ export default function DynamicScanReviewViewer({
               />
 
               {/* Dynamically mapped boxes from the API */}
-              {currentScan.anomalies.map((item) => {
-                const isSelected = selectedAnomaly?.id === item.id;
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedAnomalyId(item.id)}
-                    style={{
-                      left: `${item.box.x}%`,
-                      top: `${item.box.y}%`,
-                      width: `${item.box.width}%`,
-                      height: `${item.box.height}%`,
-                    }}
-                    className={`absolute cursor-pointer border-2 transition-all duration-200 ${
-                      isSelected
-                        ? "border-red-500 bg-red-500/25 shadow-[0_0_20px_rgba(239,68,68,0.6)] z-20"
-                        : "border-amber-400/80 bg-amber-400/10 hover:border-red-400 z-10"
-                    }`}
-                  >
-                    <span className="absolute -top-5 left-0 bg-gray-950/90 text-red-400 text-[10px] font-mono px-1.5 py-0.5 rounded border border-red-500/40">
-                      {item.confidence}%
-                    </span>
-                  </div>
-                );
-              })}
+              {currentScan.anomalies && currentScan.anomalies.length > 0 ? (
+                currentScan.anomalies.map((item) => {
+                  const isSelected = selectedAnomaly?.id === item.id;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedAnomalyId(item.id)}
+                      style={{
+                        left: `${item.box.x}%`,
+                        top: `${item.box.y}%`,
+                        width: `${item.box.width}%`,
+                        height: `${item.box.height}%`,
+                      }}
+                      className={`absolute cursor-pointer border-2 transition-all duration-200 ${
+                        isSelected
+                          ? "border-red-500 bg-red-500/25 shadow-[0_0_20px_rgba(239,68,68,0.6)] z-20"
+                          : "border-amber-400/80 bg-amber-400/10 hover:border-red-400 z-10"
+                      }`}
+                    >
+                      <span className="absolute -top-5 left-0 bg-gray-950/90 text-red-400 text-[10px] font-mono px-1.5 py-0.5 rounded border border-red-500/40">
+                        {item.confidence}%
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-center p-6 backdrop-blur-sm">
+                  <p className="text-sm font-semibold text-gray-300 max-w-xs">
+                    Anomaly detected, but specific spatial grounding could not be mapped.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
