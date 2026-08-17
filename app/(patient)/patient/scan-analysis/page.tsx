@@ -7,6 +7,7 @@ import { UploadCloud, FileText, Activity, AlertTriangle, CheckCircle2, Loader2, 
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { InteractiveScanViewer } from "@/components/InteractiveScanViewer"
+import { ScanReviewViewer } from "@/components/ScanReviewViewer"
 
 export default function ScanAnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -462,97 +463,103 @@ export default function ScanAnalysisPage() {
 
               {results && (
                 <div className="space-y-6">
-                  {/* Metadata Header Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-card border border-border/80">
-                    <div>
-                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Modality</span>
-                      <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modality}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">AI Engine</span>
-                      <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modelUsed}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Primary Indicator</span>
-                      <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.pathologies?.[0]?.name || "N/A"}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Inference Speed</span>
-                      <p className="font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{results.executionTimeSeconds}s</p>
-                    </div>
-                  </div>
-
-                  {/* Interactive Scan Viewer Canvas */}
-                  {imagePreviewUrl && (
-                    <InteractiveScanViewer 
-                      imageUrl={imagePreviewUrl} 
-                      findings={(results.bounding_boxes || []).map((box: any) => ({
-                        label: box.label,
-                        confidence: parseFloat((box.confidence * 100).toFixed(1)),
-                        coordinates: { x1: box.x_min, y1: box.y_min, x2: box.x_max, y2: box.y_max },
-                        explanation: `Spatial saliency and pixel discontinuity mapped to ${box.label} signatures in this specific anatomical region.`
-                      }))} 
-                    />
-                  )}
-
-                  {/* AI Summary Banner */}
-                  <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-foreground">
-                    <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                      <Zap className="h-3.5 w-3.5" /> Clinical AI Finding Summary
-                    </p>
-                    <p className="text-xs sm:text-sm font-semibold mt-1">{results.summary}</p>
-                  </div>
-
-                  {/* Comprehensive Clinical Report */}
-                  {results.detailedReport && (
-                    <div className="p-5 rounded-2xl border bg-card text-foreground shadow-sm">
-                      <h3 className="text-sm font-bold border-b pb-2 mb-3 flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" /> Comprehensive Diagnostic Report
-                      </h3>
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: results.detailedReport }}>
+                  {results.modality.includes("Musculoskeletal") ? (
+                    <ScanReviewViewer rawImageUrl={imagePreviewUrl || results.fileUrl || "/placeholder.png"} />
+                  ) : (
+                    <>
+                      {/* Metadata Header Cards */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-card border border-border/80">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Modality</span>
+                          <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modality}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">AI Engine</span>
+                          <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modelUsed}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Primary Indicator</span>
+                          <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.pathologies?.[0]?.name || "N/A"}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Inference Speed</span>
+                          <p className="font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{results.executionTimeSeconds}s</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Fluid 14 Pathology Probability Grid */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-                      <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                        Chest Pathologies Probability Map ({results.pathologies?.length || 0})
-                      </h3>
-                      <span className="text-[11px] text-muted-foreground">Thresholds: Critical &ge; 35% | Moderate &ge; 15%</span>
-                    </div>
+                      {/* Interactive Scan Viewer Canvas */}
+                      {imagePreviewUrl && (
+                        <InteractiveScanViewer 
+                          imageUrl={imagePreviewUrl} 
+                          findings={(results.bounding_boxes || []).map((box: any) => ({
+                            label: box.label,
+                            confidence: parseFloat((box.confidence * 100).toFixed(1)),
+                            coordinates: { x1: box.x_min, y1: box.y_min, x2: box.x_max, y2: box.y_max },
+                            explanation: `Spatial saliency and pixel discontinuity mapped to ${box.label} signatures in this specific anatomical region.`
+                          }))} 
+                        />
+                      )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {results.pathologies?.map((item: any, idx: number) => (
-                        <div key={idx} className="p-3 rounded-2xl border bg-card flex flex-col justify-between space-y-2 shadow-sm hover:border-primary/40 transition-colors">
-                          <div className="flex items-center justify-between text-xs font-bold">
-                            <span className="text-foreground flex items-center gap-1.5 truncate">
-                              {item.status === "CRITICAL" ? (
-                                <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                              ) : item.status === "MODERATE" ? (
-                                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                              ) : (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                              )}
-                              <span className="truncate">{item.name}</span>
-                            </span>
-                            <span className={`${item.status === "CRITICAL" ? "text-red-600 font-extrabold" : item.status === "MODERATE" ? "text-amber-600 font-bold" : "text-emerald-600 font-medium"}`}>
-                              {item.probability}%
-                            </span>
-                          </div>
+                      {/* AI Summary Banner */}
+                      <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-foreground">
+                        <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                          <Zap className="h-3.5 w-3.5" /> Clinical AI Finding Summary
+                        </p>
+                        <p className="text-xs sm:text-sm font-semibold mt-1">{results.summary}</p>
+                      </div>
 
-                          {/* Progress Bar */}
-                          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${getProbBarColor(item.probability)}`}
-                              style={{ width: `${Math.min(100, Math.max(3, item.probability))}%` }}
-                            ></div>
+                      {/* Comprehensive Clinical Report */}
+                      {results.detailedReport && (
+                        <div className="p-5 rounded-2xl border bg-card text-foreground shadow-sm">
+                          <h3 className="text-sm font-bold border-b pb-2 mb-3 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" /> Comprehensive Diagnostic Report
+                          </h3>
+                          <div className="prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: results.detailedReport }}>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      )}
+
+                      {/* Fluid 14 Pathology Probability Grid */}
+                      <div className="space-y-3">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+                          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                            Chest Pathologies Probability Map ({results.pathologies?.length || 0})
+                          </h3>
+                          <span className="text-[11px] text-muted-foreground">Thresholds: Critical &ge; 35% | Moderate &ge; 15%</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {results.pathologies?.map((item: any, idx: number) => (
+                            <div key={idx} className="p-3 rounded-2xl border bg-card flex flex-col justify-between space-y-2 shadow-sm hover:border-primary/40 transition-colors">
+                              <div className="flex items-center justify-between text-xs font-bold">
+                                <span className="text-foreground flex items-center gap-1.5 truncate">
+                                  {item.status === "CRITICAL" ? (
+                                    <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                  ) : item.status === "MODERATE" ? (
+                                    <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                                  ) : (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                                  )}
+                                  <span className="truncate">{item.name}</span>
+                                </span>
+                                <span className={`${item.status === "CRITICAL" ? "text-red-600 font-extrabold" : item.status === "MODERATE" ? "text-amber-600 font-bold" : "text-emerald-600 font-medium"}`}>
+                                  {item.probability}%
+                                </span>
+                              </div>
+
+                              {/* Progress Bar */}
+                              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${getProbBarColor(item.probability)}`}
+                                  style={{ width: `${Math.min(100, Math.max(3, item.probability))}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>

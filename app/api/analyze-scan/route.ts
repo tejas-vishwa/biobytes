@@ -293,15 +293,25 @@ export async function POST(req: Request) {
         summary = `Primary indicator: ${topFinding.name} (${topFinding.probability}% - ${topFinding.status}). Clinical review recommended.`
       }
 
+      let finalModality = isDicom ? "3D CT/MRI Scan (DICOM)" : "Whole-Body Radiograph"
+      let finalModelUsed = isDicom ? "MONAI 3D Medical Segmentation Pipeline" : "RadImageNet + MedSAM + YOLOv8 + LLaVA-Med (Simulated)"
+      let finalPathologies = pathologies
+
+      if (scanType === "fracture" || primaryPathologyCandidate === "Fracture") {
+        finalModality = "Musculoskeletal (MSK) Radiography"
+        finalModelUsed = "YOLOv8-MSK / ViT (Extremity Focus)"
+        summary = "MSK Module Analysis: " + summary
+      }
+
       resultData = {
         success: true,
         fileName: filename,
-        modality: isDicom ? "3D CT/MRI Scan (DICOM)" : "Whole-Body Radiograph",
-        modelUsed: isDicom ? "MONAI 3D Medical Segmentation Pipeline" : "RadImageNet + MedSAM + YOLOv8 + LLaVA-Med (Simulated)",
+        modality: finalModality,
+        modelUsed: finalModelUsed,
         overallRisk,
         maxProbability: topFinding.probability,
         executionTimeSeconds,
-        pathologies,
+        pathologies: finalPathologies,
         bounding_boxes,
         summary
       }
