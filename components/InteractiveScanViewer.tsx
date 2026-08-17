@@ -19,6 +19,13 @@ export function InteractiveScanViewer({ imageUrl, findings }: ScanViewerProps) {
   const [showOverlay, setShowOverlay] = useState(true);
   const [activeFinding, setActiveFinding] = useState<Finding | null>(null);
 
+  const uniqueFindings = findings?.filter((finding, index, self) =>
+    index === self.findIndex((t) => (
+      t.label === finding.label || 
+      JSON.stringify(t.coordinates) === JSON.stringify(finding.coordinates)
+    ))
+  ) || [];
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-5 rounded-2xl border border-border bg-card shadow-sm w-full">
       {/* Visual Canvas Area */}
@@ -31,9 +38,9 @@ export function InteractiveScanViewer({ imageUrl, findings }: ScanViewerProps) {
         />
 
         {/* Dynamic SVG Annotation Layer (Mapped to 1024x1024 viewBox for backend compatibility) */}
-        {showOverlay && findings.length > 0 && (
+        {showOverlay && uniqueFindings.length > 0 && (
           <svg className="absolute inset-0 w-full h-full pointer-events-auto" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
-            {findings.map((finding, index) => {
+            {uniqueFindings.map((finding, index) => {
               const { x1, y1, x2, y2 } = finding.coordinates;
               const width = x2 - x1;
               const height = y2 - y1;
@@ -58,7 +65,7 @@ export function InteractiveScanViewer({ imageUrl, findings }: ScanViewerProps) {
         )}
 
         {/* Visibility Toggle Button */}
-        {findings.length > 0 && (
+        {uniqueFindings.length > 0 && (
           <button
             onClick={() => setShowOverlay(!showOverlay)}
             className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-md border border-gray-700 text-xs font-medium text-white hover:bg-black/90 transition shadow-lg"
@@ -77,9 +84,9 @@ export function InteractiveScanViewer({ imageUrl, findings }: ScanViewerProps) {
             <h3 className="text-lg font-bold text-foreground">AI Visual Grounding Evidence</h3>
           </div>
 
-          {findings.length > 0 ? (
+          {uniqueFindings.length > 0 ? (
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              {findings.map((item, idx) => (
+              {uniqueFindings.map((item, idx) => (
                 <div
                   key={idx}
                   className={`p-4 rounded-xl border transition-all cursor-default ${
