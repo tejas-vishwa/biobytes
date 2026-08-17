@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createTablesIfNotExist } from "@/lib/seed-db"
+import { GoogleGenAI } from "@google/genai"
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "dummy" })
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -237,6 +240,30 @@ export async function POST(req: Request) {
         executionTimeSeconds,
         pathologies,
         summary
+      }
+    }
+
+    // Phase 3: Patient Translation using Gemini API
+    if (process.env.GEMINI_API_KEY && (resultData.raw_clinical_finding || resultData.summary)) {
+      try {
+        const rawFinding = resultData.raw_clinical_finding || resultData.summary
+        const prompt = `You are an empathetic, highly skilled medical AI assistant for the QURIX health dashboard. 
+You are given a raw clinical string output from an advanced anomaly detection pipeline (TotalSegmentator/BiomedParse/BiomedCLIP).
+Translate this raw output into a plain-English, reassuring, and easy-to-understand summary for the patient. 
+Do not use alarming language. Always remind them to consult their doctor.
+
+Raw Clinical Finding: ${rawFinding}`
+
+        const aiResponse = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt
+        })
+
+        if (aiResponse.text) {
+            resultData.summary = aiResponse.text
+        }
+      } catch (geminiErr) {
+        console.error("Gemini Translation failed, using raw summary:", geminiErr)
       }
     }
 
