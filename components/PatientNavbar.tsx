@@ -6,12 +6,14 @@ import { usePathname } from "next/navigation"
 import { LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, Menu, X, ChevronRight, User, Pill, Activity } from "lucide-react"
 import { QurixLogo } from "@/components/QurixLogo"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { Sparkles } from "lucide-react"
 
 interface PatientNavbarProps {
   userName?: string | null
+  subscriptionTier?: string | null
 }
 
-export function PatientNavbar({ userName }: PatientNavbarProps) {
+export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
 
@@ -54,9 +56,16 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
           {userName && (
-            <span className="text-sm font-medium text-foreground">
-              Hello, {userName}
-            </span>
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-foreground mr-3">
+                Hello, {userName}
+              </span>
+              {subscriptionTier === "QURIX_PLUS" && (
+                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 py-1 rounded-full shadow-sm">
+                  <Sparkles className="h-3 w-3" /> QURIX Plus
+                </span>
+              )}
+            </div>
           )}
           <Link
             href="/api/auth/signout"
@@ -112,7 +121,14 @@ export function PatientNavbar({ userName }: PatientNavbarProps) {
                 </div>
                 <div>
                   <p className="text-xs text-primary uppercase font-bold tracking-wider">Signed in as</p>
-                  <p className="text-lg font-extrabold text-foreground">{userName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-extrabold text-foreground">{userName}</p>
+                    {subscriptionTier === "QURIX_PLUS" && (
+                      <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 py-0.5 rounded-full shadow-sm">
+                        <Sparkles className="h-3 w-3" /> Plus
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
