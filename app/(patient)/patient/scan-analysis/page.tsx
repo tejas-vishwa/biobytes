@@ -56,6 +56,7 @@ export default function ScanAnalysisPage() {
       maxProbability: scan.maxProbability,
       executionTimeSeconds: 0.5,
       pathologies: scan.pathologies || [],
+      bounding_boxes: scan.bounding_boxes || [],
       summary: scan.summary,
       fileData: scan.fileData || scan.fileUrl
     })
@@ -430,12 +431,48 @@ export default function ScanAnalysisPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                     {/* Scan Image Render Box */}
                     {imagePreviewUrl ? (
-                      <div className="md:col-span-1 border rounded-2xl p-2 bg-black/60 flex items-center justify-center max-h-64 overflow-hidden">
-                        <img
-                          src={imagePreviewUrl}
-                          alt={results.fileName}
-                          className="object-contain max-h-60 w-auto mx-auto rounded-lg"
-                        />
+                      <div className="md:col-span-1 border rounded-2xl p-2 bg-black/60 flex items-center justify-center max-h-64 overflow-hidden relative">
+                        <div className="relative inline-block max-h-60 h-full">
+                          <img
+                            src={imagePreviewUrl}
+                            alt={results.fileName}
+                            className="object-contain h-full w-auto mx-auto rounded-lg"
+                          />
+                          {results.bounding_boxes && results.bounding_boxes.length > 0 && (
+                            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
+                              {results.bounding_boxes.map((box: any, idx: number) => (
+                                <g key={idx}>
+                                  <rect
+                                    x={box.x_min}
+                                    y={box.y_min}
+                                    width={box.x_max - box.x_min}
+                                    height={box.y_max - box.y_min}
+                                    fill="none"
+                                    stroke="#ef4444"
+                                    strokeWidth="6"
+                                    className="animate-pulse"
+                                  />
+                                  <rect
+                                    x={box.x_min}
+                                    y={box.y_min - 32}
+                                    width="160"
+                                    height="32"
+                                    fill="#ef4444"
+                                  />
+                                  <text
+                                    x={box.x_min + 8}
+                                    y={box.y_min - 10}
+                                    fill="white"
+                                    fontSize="18"
+                                    fontWeight="bold"
+                                  >
+                                    {box.label} {(box.confidence * 100).toFixed(0)}%
+                                  </text>
+                                </g>
+                              ))}
+                            </svg>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div className="md:col-span-1 border rounded-2xl p-6 bg-muted/40 flex flex-col items-center justify-center text-center text-muted-foreground">
