@@ -1,0 +1,19 @@
+{
+  "appId": "com.qurix.health",
+  "appName": "QURIX",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://biobytes.vercel.app",
+    "cleartext": true,
+    "allowNavigation": [
+      "biobytes.vercel.app",
+      "*.vercel.app"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "backgroundColor": "#0F2537"
+  }
+}

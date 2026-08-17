@@ -1,0 +1,81 @@
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { extractPrescriptionData, sanitizeMedications } from "@/lib/gemini-ocr"
+
+export const dynamic = "force-dynamic"
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const formData = await req.formData()
+    const file = formData.get("file") as File
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const fileBase64 = buffer.toString("base64")
+    const mimeType = file.type || "application/pdf"
+
+    // 1. Process prescription document via Gemini Structured Outputs (strictly for prescriptions)
+    const extractedData = await extractPrescriptionData(buffer, mimeType)
+
+    // Sanitize and filter out nonsensical OCR artifacts
+    const sanitizedMeds = sanitizeMedications(extractedData.medications || [])
+
+    // Map extracted medications
+    const medicines = sanitizedMeds.map(m => ({
+      name: m.medicineName,
+      dosage: m.dosage || "As prescribed",
+      frequency: m.frequency || "As directed",
+      duration: m.duration || undefined
+    }))
+
+    const doctorName = extractedData.doctor?.name || null
+    const rawText = JSON.stringify({ ...extractedData, medications: sanitizedMeds })
+
+    // 2. Save Prescription record to Turso Database
+    const prescription = await prisma.prescription.create({
+      data: {
+        patientId: session.user.id,
+        fileName: file.name,
+        fileData: fileBase64,
+        fileType: mimeType,
+        status: "PARSED",
+        rawText: rawText,
+        doctorName: doctorName,
+        medicinesJson: JSON.stringify(medicines),
+        symptomsJson: JSON.stringify([]),
+        vitalsJson: JSON.stringify({}),
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      prescription: {
+        id: prescription.id,
+        fileName: prescription.fileName,
+        doctorName: prescription.doctorName,
+        medicines,
+        symptoms: [],
+        vitals: {},
+        createdAt: prescription.createdAt
+      },
+      extractedData: {
+        ...extractedData,
+        medications: sanitizedMeds
+      }
+    })
+
+  } catch (error: any) {
+    console.error("Error uploading prescription:", error)
+    return NextResponse.json({ error: error.message || "Failed to process prescription" }, { status: 500 })
+  }
+}
