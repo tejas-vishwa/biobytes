@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { seedDatabase } from "@/lib/seed-db"
 
 export const dynamic = "force-dynamic"
 
@@ -26,6 +27,9 @@ export async function POST(req: Request) {
     const normalizedEmail = email.toLowerCase()
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
+    }).catch(async () => {
+      await seedDatabase()
+      return await prisma.user.findUnique({ where: { email: normalizedEmail } })
     })
 
     if (existingUser) {
