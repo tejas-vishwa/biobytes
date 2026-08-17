@@ -151,30 +151,66 @@ export async function POST(req: Request) {
       const isDicom = filename.toLowerCase().endsWith(".dcm") || filename.toLowerCase().endsWith(".nii") || filename.toLowerCase().endsWith(".nii.gz")
 
       let primaryPathologyCandidate = "Consolidation"
-      if (features.isNormalExplicit) {
-        primaryPathologyCandidate = "NORMAL"
-      } else if (features.isFractureExplicit) {
-        primaryPathologyCandidate = "Fracture"
-      } else if (features.isTbExplicit) {
-        primaryPathologyCandidate = "Tuberculosis (TB)"
-      } else if (features.isPneumoniaExplicit) {
-        primaryPathologyCandidate = "Pneumonia"
-      } else if (features.isCardioExplicit || features.cardiacProminence > 45) {
-        primaryPathologyCandidate = "Cardiomegaly"
-      } else if (features.isEffusionExplicit || features.basalOpacity > 40) {
-        primaryPathologyCandidate = "Effusion"
-      } else if (features.isNoduleExplicit || (features.hash % 9 === 0)) {
-        primaryPathologyCandidate = "Nodule"
-      } else if (features.apicalAsymmetry > 35) {
-        primaryPathologyCandidate = "Tuberculosis (TB)"
-      } else if (features.contrastFactor > 65) {
-        primaryPathologyCandidate = "Pneumonia"
-      } else if (features.contrastFactor < 30) {
-        primaryPathologyCandidate = "Infiltration"
-      } else {
-        // Hash-driven deterministic selection for distinct normal/abnormal scans
-        const selectorIdx = features.hash % ALL_PATHOLOGIES.length
-        primaryPathologyCandidate = ALL_PATHOLOGIES[selectorIdx]
+      let forcedProbability = 0
+      let forcedStatus = "NORMAL"
+
+      // Authentic Gemini Vision Diagnosis (If Available)
+      if (process.env.GEMINI_API_KEY) {
+        try {
+          const visionPrompt = `You are an expert radiologist. Analyze this medical scan image and identify the primary pathology.
+          You MUST select ONLY from this exact list of known categories: [${ALL_PATHOLOGIES.join(", ")}, "NORMAL"].
+          Respond with a JSON object strictly matching this schema:
+          {
+            "topDiagnosis": "Exact string from the list above",
+            "probability": 95,
+            "status": "NORMAL" | "MODERATE" | "CRITICAL"
+          }`
+          const visionResponse = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [
+              visionPrompt,
+              { inlineData: { data: base64Data, mimeType } }
+            ],
+            config: { responseMimeType: "application/json" }
+          })
+          const visionJson = JSON.parse(visionResponse.text || "{}")
+          if (visionJson.topDiagnosis) {
+            primaryPathologyCandidate = visionJson.topDiagnosis
+            forcedProbability = visionJson.probability || 85
+            forcedStatus = visionJson.status || "CRITICAL"
+            console.log("Gemini Vision override:", visionJson)
+          }
+        } catch(e) {
+          console.warn("Gemini Vision fallback failed:", e)
+        }
+      }
+
+      if (!forcedProbability) {
+        if (features.isNormalExplicit) {
+          primaryPathologyCandidate = "NORMAL"
+        } else if (features.isFractureExplicit) {
+          primaryPathologyCandidate = "Fracture"
+        } else if (features.isTbExplicit) {
+          primaryPathologyCandidate = "Tuberculosis (TB)"
+        } else if (features.isPneumoniaExplicit) {
+          primaryPathologyCandidate = "Pneumonia"
+        } else if (features.isCardioExplicit || features.cardiacProminence > 45) {
+          primaryPathologyCandidate = "Cardiomegaly"
+        } else if (features.isEffusionExplicit || features.basalOpacity > 40) {
+          primaryPathologyCandidate = "Effusion"
+        } else if (features.isNoduleExplicit || (features.hash % 9 === 0)) {
+          primaryPathologyCandidate = "Nodule"
+        } else if (features.apicalAsymmetry > 35) {
+          primaryPathologyCandidate = "Tuberculosis (TB)"
+        } else if (features.contrastFactor > 65) {
+          primaryPathologyCandidate = "Pneumonia"
+        } else if (features.contrastFactor < 30) {
+          primaryPathologyCandidate = "Infiltration"
+        } else {
+          // Hash-driven deterministic selection for distinct normal/abnormal scans
+          const selectorIdx = features.hash % ALL_PATHOLOGIES.length
+          primaryPathologyCandidate = ALL_PATHOLOGIES[selectorIdx]
+        }
       }
 
       const pathologies = ALL_PATHOLOGIES.map((name, idx) => {
@@ -187,7 +223,7 @@ export async function POST(req: Request) {
           prob = parseFloat(Math.max(0.4, prob).toFixed(1))
         } else if (name === primaryPathologyCandidate) {
           // Elevated primary finding for THIS image
-          prob = 45.0 + (features.hash % 380) / 10.0 // 45.0% - 83.0%
+          prob = forcedProbability ? forcedProbability : (45.0 + (features.hash % 380) / 10.0) // 45.0% - 83.0%
         } else if (primaryPathologyCandidate === "Tuberculosis (TB)" && (name === "Cavitary Lesion" || name === "Infiltration")) {
           prob = 32.0 + (features.hash % 200) / 10.0
         } else if (primaryPathologyCandidate === "Pneumonia" && (name === "Consolidation" || name === "Infiltration")) {
@@ -199,7 +235,9 @@ export async function POST(req: Request) {
         prob = parseFloat(Math.min(98.5, Math.max(0.4, prob)).toFixed(1))
 
         let status: "NORMAL" | "MODERATE" | "CRITICAL" = "NORMAL"
-        if (prob >= 35.0) {
+        if (name === primaryPathologyCandidate && forcedStatus !== "NORMAL") {
+            status = forcedStatus as any
+        } else if (prob >= 35.0) {
           status = "CRITICAL"
         } else if (prob >= 15.0) {
           status = "MODERATE"
