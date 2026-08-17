@@ -427,7 +427,8 @@ Keep it realistic, highly accurate, and extremely professional.`
           maxProbability: resultData.maxProbability || 0,
           pathologiesJson: JSON.stringify({
             pathologies: resultData.pathologies || [],
-            dynamicMskData: resultData.dynamicMskData || null
+            dynamicMskData: resultData.dynamicMskData || null,
+            bounding_boxes: resultData.bounding_boxes || []
           }),
           summary: resultData.summary || ""
         }
@@ -449,7 +450,8 @@ Keep it realistic, highly accurate, and extremely professional.`
             maxProbability: resultData.maxProbability || 0,
             pathologiesJson: JSON.stringify({
               pathologies: resultData.pathologies || [],
-              dynamicMskData: resultData.dynamicMskData || null
+              dynamicMskData: resultData.dynamicMskData || null,
+              bounding_boxes: resultData.bounding_boxes || []
             }),
             summary: resultData.summary || ""
           }

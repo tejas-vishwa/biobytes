@@ -63,6 +63,13 @@ export async function GET(req: Request) {
           return Array.isArray(parsed) ? null : (parsed.dynamicMskData || null)
         } catch(e) { return null }
       })(),
+      bounding_boxes: (() => {
+        if (!s.pathologiesJson) return []
+        try {
+          const parsed = JSON.parse(s.pathologiesJson)
+          return Array.isArray(parsed) ? [] : (parsed.bounding_boxes || [])
+        } catch(e) { return [] }
+      })(),
       summary: s.summary,
       createdAt: s.createdAt
     }))
