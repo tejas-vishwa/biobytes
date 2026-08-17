@@ -197,12 +197,13 @@ You MUST return your response as a raw JSON object strictly matching this schema
 }
 
 CRITICAL RULES:
-1. If the scan is a leg/bone, DO NOT include chest pathologies like Pneumonia or Cardiomegaly.
-2. If you detect a fracture, dislocation, or lesion, you MUST provide the "anomalies" bounding box coordinates (x, y, width, height) as percentages (0 to 100) indicating exactly where it is on the image.
-3. If no anomaly is found, return an empty array [] for "anomalies".
+1. If the scan is a leg, hand, or bone, DO NOT include chest pathologies.
+2. Carefully look for advanced joint diseases, such as Rheumatoid Arthritis, severe ulnar drift, and Boutonnière/Swan-neck deformities (especially on the middle finger / 3rd digit).
+3. You MUST provide the "anomalies" bounding box coordinates (x, y, width, height) as percentages (0 to 100) indicating exactly where the most severe pathology is on the image. For example, if the middle finger PIP joint is dislocated, box it perfectly.
+4. If no anomaly is found, return an empty array [] for "anomalies".
           `
           const unifiedResponse = await withTimeout(ai.models.generateContent({
-            model: "gemini-1.5-pro",
+            model: "gemini-2.5-flash",
             contents: [
               unifiedPrompt,
               { inlineData: { data: base64Data, mimeType } }
