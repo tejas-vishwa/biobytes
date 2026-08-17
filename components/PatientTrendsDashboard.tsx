@@ -366,11 +366,17 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => downloadSingleGraph(trend.code, trend.name)}
-                        title={`Download ${trend.name} Graph`}
+                        onClick={() => {
+                          if (session?.user?.paymentStatus === "ACTIVE") {
+                            downloadSingleGraph(trend.code, trend.name)
+                          } else {
+                            router.push("/patient/qurix-plus")
+                          }
+                        }}
+                        title={session?.user?.paymentStatus === "ACTIVE" ? `Download ${trend.name} Graph` : "Unlock QURIX Plus to Download"}
                         className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                       >
-                        <Download className="h-4 w-4" />
+                        {session?.user?.paymentStatus === "ACTIVE" ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4 text-indigo-500" />}
                       </Button>
                     )}
                   </div>
