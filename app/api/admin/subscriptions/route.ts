@@ -18,8 +18,8 @@ export async function GET(req: Request) {
 
     const activeUsers = await prisma.user.findMany({
       where: { subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
-      select: { id: true, name: true, email: true, createdAt: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" }
+      select: { id: true, name: true, email: true, createdAt: true },
+      orderBy: { createdAt: "desc" }
     })
 
     return NextResponse.json({ success: true, users: pendingUsers, activeUsers })

@@ -173,7 +173,7 @@ export default function AdminSubscriptionsPage() {
                         {user.email}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
-                        {new Date(user.updatedAt).toLocaleDateString()}
+                        {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase bg-emerald-500/10 text-emerald-600 px-2 py-1 rounded-full">
