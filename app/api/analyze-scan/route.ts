@@ -273,20 +273,34 @@ export async function POST(req: Request) {
     if (process.env.GEMINI_API_KEY && (resultData.raw_clinical_finding || resultData.summary)) {
       try {
         const rawFinding = resultData.raw_clinical_finding || resultData.summary
-        const prompt = `You are an empathetic, highly skilled medical AI assistant for the QURIX health dashboard. 
-You are given a raw clinical string output from an advanced anomaly detection pipeline (TotalSegmentator/BiomedParse/BiomedCLIP).
-Translate this raw output into a plain-English, reassuring, and easy-to-understand summary for the patient. 
+        const summaryPrompt = `You are an empathetic, highly skilled medical AI assistant for the QURIX health dashboard. 
+You are given a raw clinical string output from an advanced anomaly detection pipeline.
+Translate this raw output into a plain-English, reassuring, and easy-to-understand 1-2 sentence summary for the patient. 
 Do not use alarming language. Always remind them to consult their doctor.
 
 Raw Clinical Finding: ${rawFinding}`
 
-        const aiResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt
-        })
+        const reportPrompt = `You are an expert radiologist AI. Generate a structured, highly detailed, professional medical diagnostic report (in HTML format, using only basic tags like <b>, <i>, <br>, <ul>, <li>, <h3>, <p>) based on the following finding: "${rawFinding}". Do NOT wrap in \`\`\`html markdown. Just return the raw HTML string.
+Include these sections:
+<h3>1. Patient Info</h3> (Anonymized / Demo)
+<h3>2. Clinical Indication</h3> AI Screening
+<h3>3. Findings</h3> Extremely detailed, professional description of the anomaly and affected structures. Use advanced medical terminology.
+<h3>4. Impression</h3> A concise summary of the critical diagnosis.
+<h3>5. Recommendations</h3> Suggested next clinical steps (e.g., MRI, Orthopedic Consult).
 
-        if (aiResponse.text) {
-            resultData.summary = aiResponse.text
+Keep it realistic, highly accurate, and extremely professional.`
+
+        const [summaryResponse, reportResponse] = await Promise.all([
+          ai.models.generateContent({ model: "gemini-2.5-flash", contents: summaryPrompt }),
+          ai.models.generateContent({ model: "gemini-2.5-flash", contents: reportPrompt })
+        ])
+
+        if (summaryResponse.text) {
+            resultData.summary = summaryResponse.text
+        }
+        if (reportResponse.text) {
+            // Convert simple markdown to HTML (very basic parsing for the UI)
+            resultData.detailedReport = reportResponse.text
         }
       } catch (geminiErr) {
         console.error("Gemini Translation failed, using raw summary:", geminiErr)
@@ -349,7 +363,8 @@ Raw Clinical Finding: ${rawFinding}`
       ...resultData,
       scanId: savedScan?.id || `temp-${Date.now()}`,
       fileUrl,
-      fileData: dataUrl
+      fileData: dataUrl,
+      detailedReport: resultData.detailedReport || null
     })
 
   } catch (error: any) {

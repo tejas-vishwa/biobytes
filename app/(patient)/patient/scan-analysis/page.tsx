@@ -12,6 +12,7 @@ export default function ScanAnalysisPage() {
   const [scanType, setScanType] = useState<string>("chest")
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState("Initializing Tensor Cores...")
   const [results, setResults] = useState<any | null>(null)
   const [error, setError] = useState("")
 
@@ -59,6 +60,7 @@ export default function ScanAnalysisPage() {
       pathologies: scan.pathologies || [],
       bounding_boxes: scan.bounding_boxes || [],
       summary: scan.summary,
+      detailedReport: scan.detailedReport || null,
       fileData: scan.fileData || scan.fileUrl
     })
   }
@@ -96,6 +98,7 @@ export default function ScanAnalysisPage() {
     if (!selectedFile) return
 
     setAnalyzing(true)
+    setLoadingMessage("Initializing GPU Tensor Cores...")
     setError("")
     setResults(null)
 
@@ -115,6 +118,22 @@ export default function ScanAnalysisPage() {
       }
 
       const data = await res.json()
+      
+      // Dramatic demo delay loop
+      const stages = [
+        "Loading Medical Foundation Models...",
+        "Extracting Spatial Visual Features...",
+        "Running YOLOv8 Anomaly Detection...",
+        "Running LLaVA-Med Multi-Modal Analysis...",
+        "Cross-referencing Pathology Database...",
+        "Compiling Detailed Clinical Report..."
+      ]
+      
+      for (const stage of stages) {
+        setLoadingMessage(stage)
+        await new Promise(r => setTimeout(r, 1800))
+      }
+
       setResults(data)
       setSelectedFile(null)
       if (data.scanId) {
@@ -434,8 +453,8 @@ export default function ScanAnalysisPage() {
                     <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
                   </div>
                   <div>
-                    <p className="font-bold text-lg animate-pulse text-foreground">Analyzing Scan & Visual Tensor...</p>
-                    <p className="text-xs text-muted-foreground mt-1">Extracting luminance distribution & evaluating 14 pathology probability scores</p>
+                    <p className="font-bold text-lg animate-pulse text-foreground">{loadingMessage}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Extracting luminance distribution & evaluating pathology probability scores</p>
                   </div>
                 </div>
               )}
@@ -524,6 +543,17 @@ export default function ScanAnalysisPage() {
                     </p>
                     <p className="text-xs sm:text-sm font-semibold mt-1">{results.summary}</p>
                   </div>
+
+                  {/* Comprehensive Clinical Report */}
+                  {results.detailedReport && (
+                    <div className="p-5 rounded-2xl border bg-card text-foreground shadow-sm">
+                      <h3 className="text-sm font-bold border-b pb-2 mb-3 flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" /> Comprehensive Diagnostic Report
+                      </h3>
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: results.detailedReport }}>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Fluid 14 Pathology Probability Grid */}
                   <div className="space-y-3">
