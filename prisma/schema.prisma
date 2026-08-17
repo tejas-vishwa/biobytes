@@ -13,8 +13,10 @@ model User {
   passwordHash  String
   name          String?
   role          String    @default("PATIENT") // PATIENT, DOCTOR, ADMIN, LAB_PARTNER
-  accountStatus String    @default("ACTIVE") // ACTIVE, SUSPENDED
-  createdAt     DateTime  @default(now())
+  accountStatus    String    @default("ACTIVE") // ACTIVE, SUSPENDED
+  subscriptionTier String    @default("FREE") // "FREE" or "QURIX_PLUS"
+  paymentStatus    String    @default("NONE") // "NONE", "PENDING_APPROVAL", "ACTIVE"
+  createdAt        DateTime  @default(now())
 
   // Relations
   reports             Report[]       @relation("PatientReports")

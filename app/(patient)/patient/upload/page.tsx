@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { UploadCloud, FileText, Camera, X, Pill, Activity, CheckCircle2, AlertTriangle, FileSpreadsheet, Loader2 } from "lucide-react"
@@ -22,6 +23,7 @@ interface ProcessedFileItem {
 
 export default function UnifiedUploadPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("REPORT")
   const [fileItems, setFileItems] = useState<ProcessedFileItem[]>([])
   const [uploading, setUploading] = useState(false)
@@ -234,23 +236,36 @@ export default function UnifiedUploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="border-2 border-dashed rounded-2xl p-8 text-center hover:bg-muted/40 transition-colors border-primary/30 bg-card active:scale-[0.99] cursor-pointer">
-            <input
-              id="unified-file-upload"
-              type="file"
-              multiple
-              className="sr-only"
-              onChange={handleFileChange}
-              accept="image/*,application/pdf,.dcm,.nii,.nii.gz"
-            />
-            <label htmlFor="unified-file-upload" className="cursor-pointer flex flex-col items-center">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3 shadow-inner">
-                <Camera className="h-7 w-7" />
+          {selectedCategory === "SCAN" && session?.user?.paymentStatus !== "ACTIVE" ? (
+            <div className="border border-indigo-500/30 rounded-2xl p-8 text-center bg-indigo-500/5 cursor-pointer hover:bg-indigo-500/10 transition-colors" onClick={() => router.push("/patient/qurix-plus")}>
+              <div className="h-14 w-14 mx-auto rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3 shadow-inner">
+                <Lock className="h-7 w-7" />
               </div>
-              <span className="text-sm font-extrabold text-foreground">Tap or Drop Files Here</span>
-              <span className="text-xs text-muted-foreground mt-1">Select single or multiple medical files</span>
-            </label>
-          </div>
+              <h3 className="text-base font-extrabold text-foreground">Premium Feature Locked</h3>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">3D Radiology AI requires QURIX Plus.</p>
+              <Button onClick={(e) => { e.stopPropagation(); router.push("/patient/qurix-plus"); }} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md rounded-xl">
+                Unlock for Rs 29/month
+              </Button>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed rounded-2xl p-8 text-center hover:bg-muted/40 transition-colors border-primary/30 bg-card active:scale-[0.99] cursor-pointer">
+              <input
+                id="unified-file-upload"
+                type="file"
+                multiple
+                className="sr-only"
+                onChange={handleFileChange}
+                accept="image/*,application/pdf,.dcm,.nii,.nii.gz"
+              />
+              <label htmlFor="unified-file-upload" className="cursor-pointer flex flex-col items-center">
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3 shadow-inner">
+                  <Camera className="h-7 w-7" />
+                </div>
+                <span className="text-sm font-extrabold text-foreground">Tap or Drop Files Here</span>
+                <span className="text-xs text-muted-foreground mt-1">Select single or multiple medical files</span>
+              </label>
+            </div>
+          )}
 
           {/* Selected files queue */}
           {fileItems.length > 0 && !uploading && (
@@ -304,7 +319,7 @@ export default function UnifiedUploadPage() {
           )}
         </CardContent>
         <CardFooter>
-          <Button onClick={handleUpload} disabled={fileItems.length === 0 || uploading} className="w-full h-12 text-base font-bold shadow-md rounded-xl">
+          <Button onClick={handleUpload} disabled={fileItems.length === 0 || uploading || (selectedCategory === "SCAN" && session?.user?.paymentStatus !== "ACTIVE")} className="w-full h-12 text-base font-bold shadow-md rounded-xl">
             {uploading ? `Processing ${uploadProgress}/${fileItems.length}...` : `Upload & Process ${fileItems.length} ${selectedCategory === "SCAN" ? "Medical Scan" : selectedCategory === "PRESCRIPTION" ? "Prescription" : "Lab Report"}${fileItems.length > 1 ? "s" : ""}`}
           </Button>
         </CardFooter>
