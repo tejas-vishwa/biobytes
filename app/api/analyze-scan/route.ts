@@ -163,31 +163,68 @@ export async function POST(req: Request) {
       let forcedProbability = 0
       let forcedStatus = "NORMAL"
 
+      let dynamicMskData: any = null
+
       // Authentic Gemini Vision Diagnosis (If Available)
       if (process.env.GEMINI_API_KEY) {
         try {
-          const visionPrompt = `You are an expert radiologist. Analyze this medical scan image and identify the primary pathology.
-          You MUST select ONLY from this exact list of known categories: [${ALL_PATHOLOGIES.join(", ")}, "NORMAL"].
-          Respond with a JSON object strictly matching this schema:
-          {
-            "topDiagnosis": "Exact string from the list above",
-            "probability": 95,
-            "status": "NORMAL" | "MODERATE" | "CRITICAL"
-          }`
-          const visionResponse = await withTimeout(ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [
-              visionPrompt,
-              { inlineData: { data: base64Data, mimeType } }
-            ],
-            config: { responseMimeType: "application/json" }
-          }), 5000)
-          const visionJson = JSON.parse(visionResponse.text || "{}")
-          if (visionJson.topDiagnosis) {
-            primaryPathologyCandidate = visionJson.topDiagnosis
-            forcedProbability = visionJson.probability || 85
-            forcedStatus = visionJson.status || "CRITICAL"
-            console.log("Gemini Vision override:", visionJson)
+          if (scanType === "fracture") {
+            const mskPrompt = `Analyze this radiological image. Identify the anatomy/body part, detect all acute fractures, dislocations, or pathologies, provide normalized bounding box coordinates (0-100 for x, y, width, height), severity, and a confidence score. Return ONLY valid JSON matching the schema:
+{
+  "scanTitle": "Diagnostic Review: Lower Extremity (Tibia/Fibula)",
+  "modality": "Musculoskeletal • Radiography",
+  "anomalies": [
+    {
+      "id": "1",
+      "region": "Distal Tibia & Fibula",
+      "finding": "Displaced transverse fracture of the distal tibial shaft...",
+      "severity": "Severe",
+      "confidence": 97.2,
+      "box": { "x": 48, "y": 68, "width": 38, "height": 28 }
+    }
+  ]
+}`
+            const mskResponse = await withTimeout(ai.models.generateContent({
+              model: "gemini-2.5-flash",
+              contents: [
+                mskPrompt,
+                { inlineData: { data: base64Data, mimeType } }
+              ],
+              config: { responseMimeType: "application/json" }
+            }), 8000)
+            
+            const mskJson = JSON.parse(mskResponse.text || "{}")
+            if (mskJson.anomalies) {
+              dynamicMskData = mskJson
+              primaryPathologyCandidate = "Fracture"
+              forcedProbability = 95
+              forcedStatus = "CRITICAL"
+              console.log("Gemini Vision Dynamic MSK success:", dynamicMskData.scanTitle)
+            }
+          } else {
+            const visionPrompt = `You are an expert radiologist. Analyze this medical scan image and identify the primary pathology.
+            You MUST select ONLY from this exact list of known categories: [${ALL_PATHOLOGIES.join(", ")}, "NORMAL"].
+            Respond with a JSON object strictly matching this schema:
+            {
+              "topDiagnosis": "Exact string from the list above",
+              "probability": 95,
+              "status": "NORMAL" | "MODERATE" | "CRITICAL"
+            }`
+            const visionResponse = await withTimeout(ai.models.generateContent({
+              model: "gemini-2.5-flash",
+              contents: [
+                visionPrompt,
+                { inlineData: { data: base64Data, mimeType } }
+              ],
+              config: { responseMimeType: "application/json" }
+            }), 5000)
+            const visionJson = JSON.parse(visionResponse.text || "{}")
+            if (visionJson.topDiagnosis) {
+              primaryPathologyCandidate = visionJson.topDiagnosis
+              forcedProbability = visionJson.probability || 85
+              forcedStatus = visionJson.status || "CRITICAL"
+              console.log("Gemini Vision override:", visionJson)
+            }
           }
         } catch(e) {
           console.warn("Gemini Vision fallback failed:", e)
@@ -322,7 +359,8 @@ export async function POST(req: Request) {
         executionTimeSeconds,
         pathologies: finalPathologies,
         bounding_boxes,
-        summary
+        summary,
+        dynamicMskData
       }
     }
 
@@ -378,7 +416,10 @@ Keep it realistic, highly accurate, and extremely professional.`
           modelUsed: resultData.modelUsed || "TorchXRayVision DenseNet-121",
           overallRisk: resultData.overallRisk || "LOW",
           maxProbability: resultData.maxProbability || 0,
-          pathologiesJson: JSON.stringify(resultData.pathologies || []),
+          pathologiesJson: JSON.stringify({
+            pathologies: resultData.pathologies || [],
+            dynamicMskData: resultData.dynamicMskData || null
+          }),
           summary: resultData.summary || ""
         }
       })
@@ -397,7 +438,10 @@ Keep it realistic, highly accurate, and extremely professional.`
             modelUsed: resultData.modelUsed || "TorchXRayVision DenseNet-121",
             overallRisk: resultData.overallRisk || "LOW",
             maxProbability: resultData.maxProbability || 0,
-            pathologiesJson: JSON.stringify(resultData.pathologies || []),
+            pathologiesJson: JSON.stringify({
+              pathologies: resultData.pathologies || [],
+              dynamicMskData: resultData.dynamicMskData || null
+            }),
             summary: resultData.summary || ""
           }
         })

@@ -7,7 +7,7 @@ import { UploadCloud, FileText, Activity, AlertTriangle, CheckCircle2, Loader2, 
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { InteractiveScanViewer } from "@/components/InteractiveScanViewer"
-import { ScanReviewViewer } from "@/components/ScanReviewViewer"
+import DynamicScanReviewViewer from "@/components/DynamicScanReviewViewer"
 
 export default function ScanAnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -63,7 +63,8 @@ export default function ScanAnalysisPage() {
       bounding_boxes: scan.bounding_boxes || [],
       summary: scan.summary,
       detailedReport: scan.detailedReport || null,
-      fileData: scan.fileData || scan.fileUrl
+      fileData: scan.fileData || scan.fileUrl,
+      dynamicMskData: scan.dynamicMskData || null
     })
   }
 
@@ -463,8 +464,11 @@ export default function ScanAnalysisPage() {
 
               {results && (
                 <div className="space-y-6">
-                  {results.modality.includes("Musculoskeletal") ? (
-                    <ScanReviewViewer rawImageUrl={imagePreviewUrl || results.fileUrl || "/placeholder.png"} />
+                  {results.modality.includes("Musculoskeletal") && results.dynamicMskData ? (
+                    <DynamicScanReviewViewer currentScan={{
+                      ...results.dynamicMskData,
+                      imageUrl: imagePreviewUrl || results.fileUrl || "/placeholder.png"
+                    }} />
                   ) : (
                     <>
                       {/* Metadata Header Cards */}

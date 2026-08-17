@@ -49,7 +49,20 @@ export async function GET(req: Request) {
       modelUsed: s.modelUsed,
       overallRisk: s.overallRisk,
       maxProbability: s.maxProbability,
-      pathologies: s.pathologiesJson ? JSON.parse(s.pathologiesJson) : [],
+      pathologies: (() => {
+        if (!s.pathologiesJson) return []
+        try {
+          const parsed = JSON.parse(s.pathologiesJson)
+          return Array.isArray(parsed) ? parsed : (parsed.pathologies || [])
+        } catch(e) { return [] }
+      })(),
+      dynamicMskData: (() => {
+        if (!s.pathologiesJson) return null
+        try {
+          const parsed = JSON.parse(s.pathologiesJson)
+          return Array.isArray(parsed) ? null : (parsed.dynamicMskData || null)
+        } catch(e) { return null }
+      })(),
       summary: s.summary,
       createdAt: s.createdAt
     }))
