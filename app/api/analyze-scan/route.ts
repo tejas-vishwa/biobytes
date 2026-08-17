@@ -170,69 +170,59 @@ export async function POST(req: Request) {
 
       let dynamicMskData: any = null
 
+      let unifiedGeminiData: any = null
+
       // Authentic Gemini Vision Diagnosis (If Available)
       if (process.env.GEMINI_API_KEY) {
         try {
-          if (scanType === "fracture") {
-            const mskPrompt = `Analyze this radiological image. Identify the anatomy/body part, detect all acute fractures, dislocations, or pathologies, provide normalized bounding box coordinates (0-100 for x, y, width, height), severity, and a confidence score. Return ONLY valid JSON matching the schema:
+          const unifiedPrompt = `
+You are QURIX, an elite, highly accurate AI Radiologist. 
+Analyze the attached medical scan with maximum precision.
+
+You MUST return your response as a raw JSON object strictly matching this schema. NO markdown formatting, NO backticks.
 {
-  "scanTitle": "Diagnostic Review: Lower Extremity (Tibia/Fibula)",
-  "modality": "Musculoskeletal • Radiography",
+  "dynamic_map_title": "string (e.g., 'MSK PATHOLOGIES MAP', 'NEUROLOGICAL PATHOLOGIES MAP', 'CHEST PATHOLOGIES MAP')",
+  "clinical_summary": "string (A highly detailed, professional radiological summary of all findings)",
+  "pathologies": [
+    { "name": "string (Specific to the anatomy)", "probability": number (0-100) }
+  ],
   "anomalies": [
     {
-      "id": "1",
-      "region": "Distal Tibia & Fibula",
-      "finding": "Displaced transverse fracture of the distal tibial shaft...",
-      "severity": "Severe",
-      "confidence": 97.2,
-      "box": { "x": 48, "y": 68, "width": 38, "height": 28 }
+      "id": "string",
+      "label": "string (What is the specific issue?)",
+      "confidence": number (0-100),
+      "box": { "x": number (0-100 percentage), "y": number, "width": number, "height": number }
     }
   ]
-}`
-            const mskResponse = await withTimeout(ai.models.generateContent({
-              model: "gemini-2.5-flash",
-              contents: [
-                mskPrompt,
-                { inlineData: { data: base64Data, mimeType } }
-              ],
-              config: { responseMimeType: "application/json" }
-            }), 8000)
-            
-            const mskJson = JSON.parse(mskResponse.text || "{}")
-            if (mskJson.anomalies) {
-              dynamicMskData = mskJson
-              primaryPathologyCandidate = "Fracture"
-              forcedProbability = 95
-              forcedStatus = "CRITICAL"
-              console.log("Gemini Vision Dynamic MSK success:", dynamicMskData.scanTitle)
-            }
-          } else {
-            const visionPrompt = `You are an expert radiologist. Analyze this medical scan image and identify the primary pathology.
-            You MUST select ONLY from this exact list of known categories: [${domainPathologies.join(", ")}, "NORMAL"].
-            Respond with a JSON object strictly matching this schema:
-            {
-              "topDiagnosis": "Exact string from the list above",
-              "probability": 95,
-              "status": "NORMAL" | "MODERATE" | "CRITICAL"
-            }`
-            const visionResponse = await withTimeout(ai.models.generateContent({
-              model: "gemini-2.5-flash",
-              contents: [
-                visionPrompt,
-                { inlineData: { data: base64Data, mimeType } }
-              ],
-              config: { responseMimeType: "application/json" }
-            }), 5000)
-            const visionJson = JSON.parse(visionResponse.text || "{}")
-            if (visionJson.topDiagnosis) {
-              primaryPathologyCandidate = visionJson.topDiagnosis
-              forcedProbability = visionJson.probability || 85
-              forcedStatus = visionJson.status || "CRITICAL"
-              console.log("Gemini Vision override:", visionJson)
-            }
+}
+
+CRITICAL RULES:
+1. If the scan is a leg/bone, DO NOT include chest pathologies like Pneumonia or Cardiomegaly.
+2. If you detect a fracture, dislocation, or lesion, you MUST provide the "anomalies" bounding box coordinates (x, y, width, height) as percentages (0 to 100) indicating exactly where it is on the image.
+3. If no anomaly is found, return an empty array [] for "anomalies".
+          `
+          const unifiedResponse = await withTimeout(ai.models.generateContent({
+            model: "gemini-1.5-pro",
+            contents: [
+              unifiedPrompt,
+              { inlineData: { data: base64Data, mimeType } }
+            ],
+            config: { responseMimeType: "application/json" }
+          }), 15000)
+          
+          let responseText = unifiedResponse.text || "{}"
+          responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim()
+          unifiedGeminiData = JSON.parse(responseText)
+          
+          if (unifiedGeminiData && unifiedGeminiData.pathologies && unifiedGeminiData.pathologies.length > 0) {
+            const top = [...unifiedGeminiData.pathologies].sort((a, b) => b.probability - a.probability)[0]
+            primaryPathologyCandidate = top.name
+            forcedProbability = top.probability
+            forcedStatus = top.probability >= 35 ? "CRITICAL" : (top.probability >= 15 ? "MODERATE" : "NORMAL")
+            console.log("Gemini 1.5 Pro Vision Success:", unifiedGeminiData.dynamic_map_title)
           }
         } catch(e) {
-          console.warn("Gemini Vision fallback failed:", e)
+          console.warn("Gemini Vision 1.5 Pro fallback failed:", e)
         }
       }
 
@@ -356,6 +346,37 @@ export async function POST(req: Request) {
         finalModality = "Musculoskeletal (MSK) Radiography"
         finalModelUsed = "YOLOv8-MSK / ViT (Extremity Focus)"
         summary = "MSK Module Analysis: " + summary
+      }
+
+      // If Gemini 1.5 Pro succeeded, perfectly map its unified schema to override the simulated data
+      if (unifiedGeminiData) {
+        finalPathologies = unifiedGeminiData.pathologies.map((p: any) => ({
+          name: p.name,
+          probability: p.probability,
+          status: p.probability >= 35 ? "CRITICAL" : (p.probability >= 15 ? "MODERATE" : "NORMAL")
+        }))
+        
+        finalModality = unifiedGeminiData.dynamic_map_title || finalModality
+        finalModelUsed = "Gemini 1.5 Pro (Multimodal Core)"
+        summary = unifiedGeminiData.clinical_summary || summary
+        
+        // Populate specific viewer data structures
+        if (unifiedGeminiData.anomalies) {
+          dynamicMskData = {
+            scanTitle: unifiedGeminiData.dynamic_map_title,
+            modality: unifiedGeminiData.dynamic_map_title,
+            anomalies: unifiedGeminiData.anomalies
+          }
+          
+          bounding_boxes = unifiedGeminiData.anomalies.map((a: any) => ({
+            label: a.label,
+            confidence: (a.confidence || 90) / 100.0,
+            x_min: a.box.x,
+            y_min: a.box.y,
+            x_max: a.box.x + a.box.width,
+            y_max: a.box.y + a.box.height
+          }))
+        }
       }
 
       resultData = {
