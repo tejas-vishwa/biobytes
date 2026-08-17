@@ -170,7 +170,9 @@ export async function createTablesIfNotExist() {
       "userId" TEXT,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL
-    );`
+    );`,
+    `ALTER TABLE "User" ADD COLUMN "subscriptionTier" TEXT NOT NULL DEFAULT 'FREE';`,
+    `ALTER TABLE "User" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'NONE';`
   ]
 
   for (const statement of ddlStatements) {
