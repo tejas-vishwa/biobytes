@@ -106,12 +106,14 @@ function extractImageVisualFeatures(buffer: Buffer, filename: string, scanType: 
   }
 }
 
-const ALL_PATHOLOGIES = [
-  "Fracture", "Dislocation", "Osteoarthritis", "Bone Lesion",
+const MSK_PATHOLOGIES = ["Fracture", "Dislocation", "Osteoarthritis", "Bone Lesion"]
+const NEURO_PATHOLOGIES = ["Hemorrhage", "Tumor/Mass", "Infarction", "Edema (Brain)"]
+const CHEST_PATHOLOGIES = [
   "Atelectasis", "Consolidation", "Infiltration", "Pneumothorax",
-  "Edema", "Emphysema", "Fibrosis", "Effusion",
+  "Edema (Lungs)", "Emphysema", "Fibrosis", "Effusion",
   "Pneumonia", "Pleural Thickening", "Cardiomegaly", "Nodule"
 ]
+const ALL_PATHOLOGIES = [...MSK_PATHOLOGIES, ...NEURO_PATHOLOGIES, ...CHEST_PATHOLOGIES]
 
 export async function POST(req: Request) {
   try {
@@ -162,6 +164,9 @@ export async function POST(req: Request) {
       let primaryPathologyCandidate = "Consolidation"
       let forcedProbability = 0
       let forcedStatus = "NORMAL"
+      let domainPathologies = CHEST_PATHOLOGIES
+      if (scanType === "fracture") domainPathologies = MSK_PATHOLOGIES
+      if (scanType === "brain") domainPathologies = NEURO_PATHOLOGIES
 
       let dynamicMskData: any = null
 
@@ -203,7 +208,7 @@ export async function POST(req: Request) {
             }
           } else {
             const visionPrompt = `You are an expert radiologist. Analyze this medical scan image and identify the primary pathology.
-            You MUST select ONLY from this exact list of known categories: [${ALL_PATHOLOGIES.join(", ")}, "NORMAL"].
+            You MUST select ONLY from this exact list of known categories: [${domainPathologies.join(", ")}, "NORMAL"].
             Respond with a JSON object strictly matching this schema:
             {
               "topDiagnosis": "Exact string from the list above",
@@ -254,12 +259,12 @@ export async function POST(req: Request) {
           primaryPathologyCandidate = "Infiltration"
         } else {
           // Hash-driven deterministic selection for distinct normal/abnormal scans
-          const selectorIdx = features.hash % ALL_PATHOLOGIES.length
-          primaryPathologyCandidate = ALL_PATHOLOGIES[selectorIdx]
+          const selectorIdx = features.hash % domainPathologies.length
+          primaryPathologyCandidate = domainPathologies[selectorIdx]
         }
       }
 
-      const pathologies = ALL_PATHOLOGIES.map((name, idx) => {
+      const pathologies = domainPathologies.map((name, idx) => {
         // Pseudo-random deterministic baseline for realistic clinical background noise
         const seed = (features.hash + idx * 7919 + Math.floor(features.contrastFactor * 10)) % 10000
         let prob = (seed / 10000.0) * 12.0 // Low baseline (0.4% - 12%)
@@ -343,7 +348,11 @@ export async function POST(req: Request) {
       let finalModelUsed = isDicom ? "MONAI 3D Medical Segmentation Pipeline" : "RadImageNet + MedSAM + YOLOv8 + LLaVA-Med (Simulated)"
       let finalPathologies = pathologies
 
-      if (scanType === "fracture" || primaryPathologyCandidate === "Fracture") {
+      if (scanType === "brain" || primaryPathologyCandidate === "Hemorrhage" || primaryPathologyCandidate === "Tumor/Mass") {
+        finalModality = "Neurological (Brain) MRI/CT"
+        finalModelUsed = "Med3D ResNet / U-Net"
+        summary = "Neurology Module Analysis: " + summary
+      } else if (scanType === "fracture" || primaryPathologyCandidate === "Fracture") {
         finalModality = "Musculoskeletal (MSK) Radiography"
         finalModelUsed = "YOLOv8-MSK / ViT (Extremity Focus)"
         summary = "MSK Module Analysis: " + summary

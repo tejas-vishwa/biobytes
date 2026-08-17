@@ -523,11 +523,15 @@ export default function ScanAnalysisPage() {
                         </div>
                       )}
 
-                      {/* Fluid 14 Pathology Probability Grid */}
+                      {/* Fluid Domain-Specific Pathology Probability Grid */}
                       <div className="space-y-3">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
                           <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                            Chest Pathologies Probability Map ({results.pathologies?.length || 0})
+                            {results.modality.includes("Neurological") 
+                              ? "Neurological Pathologies Map" 
+                              : results.modality.includes("Musculoskeletal") 
+                                ? "MSK Pathologies Probability Map" 
+                                : "Chest Pathologies Probability Map"} ({results.pathologies?.length || 0})
                           </h3>
                           <span className="text-[11px] text-muted-foreground">Thresholds: Critical &ge; 35% | Moderate &ge; 15%</span>
                         </div>
