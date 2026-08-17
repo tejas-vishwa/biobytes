@@ -9,6 +9,7 @@ import Link from "next/link"
 
 export default function ScanAnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [scanType, setScanType] = useState<string>("auto")
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [results, setResults] = useState<any | null>(null)
@@ -100,6 +101,7 @@ export default function ScanAnalysisPage() {
 
     const formData = new FormData()
     formData.append("file", selectedFile)
+    formData.append("scanType", scanType)
 
     try {
       const res = await fetch("/api/analyze-scan", {
@@ -274,6 +276,20 @@ export default function ScanAnalysisPage() {
                         </Button>
                       </div>
                     )}
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-foreground ml-1">Anatomy / Scan Type</label>
+                      <select 
+                        value={scanType}
+                        onChange={(e) => setScanType(e.target.value)}
+                        className="w-full h-10 px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                      >
+                        <option value="auto">Auto-Detect (AI Classification)</option>
+                        <option value="chest">Cardiothoracic (Chest X-Ray / CT)</option>
+                        <option value="fracture">Musculoskeletal (Bone Fracture)</option>
+                        <option value="brain">Neurological (Brain MRI / CT)</option>
+                      </select>
+                    </div>
                   </div>
                 )}
 

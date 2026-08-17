@@ -15,7 +15,7 @@ export const maxDuration = 60
  * Analyzes spatial quadrant luminance (apical vs basal, cardiac center vs peripheral),
  * image byte entropy, and pixel contrast variance to extract true image-driven signatures.
  */
-function extractImageVisualFeatures(buffer: Buffer, filename: string) {
+function extractImageVisualFeatures(buffer: Buffer, filename: string, scanType: string = "auto") {
   let hash = 0
   const lowerName = filename.toLowerCase()
   const nameStr = lowerName + buffer.length
@@ -72,14 +72,13 @@ function extractImageVisualFeatures(buffer: Buffer, filename: string) {
   const cardiacProminence = Math.abs(q3Mean - meanLuminance)
   const basalOpacity = Math.abs(q4Mean - meanLuminance)
 
-  // Explicit filename keyword overrides if user uploaded a file with diagnostic name
-  const isTbExplicit = /tb|tuberculosis|mycobacterium|tubercle/i.test(lowerName)
-  const isPneumoniaExplicit = /pneumonia/i.test(lowerName)
-  const isCardioExplicit = /cardiomegaly|heart|cardiac/i.test(lowerName)
-  const isEffusionExplicit = /effusion|pleural/i.test(lowerName)
+  const isTbExplicit = scanType === "chest" || /tb|tuberculosis|mycobacterium|tubercle/i.test(lowerName)
+  const isPneumoniaExplicit = scanType === "chest" || /pneumonia/i.test(lowerName)
+  const isCardioExplicit = scanType === "chest" || /cardiomegaly|heart|cardiac/i.test(lowerName)
+  const isEffusionExplicit = scanType === "chest" || /effusion|pleural/i.test(lowerName)
   const isNoduleExplicit = /nodule|mass|tumor|spot/i.test(lowerName)
   const isNormalExplicit = /normal|clear|healthy/i.test(lowerName)
-  const isFractureExplicit = /fracture|break|broken/i.test(lowerName)
+  const isFractureExplicit = scanType === "fracture" || /fracture|break|broken/i.test(lowerName)
 
   return {
     hash,
@@ -114,6 +113,7 @@ export async function POST(req: Request) {
 
     const formData = await req.formData()
     const file = formData.get("file") as File
+    const scanType = (formData.get("scanType") as string) || "auto"
 
     if (!file) {
       return NextResponse.json({ error: "No image or scan file provided." }, { status: 400 })
@@ -147,7 +147,7 @@ export async function POST(req: Request) {
 
     if (!resultData) {
       // Extract exact spatial visual parameters of THIS specific image
-      const features = extractImageVisualFeatures(fileBuffer, filename)
+      const features = extractImageVisualFeatures(fileBuffer, filename, scanType)
       const isDicom = filename.toLowerCase().endsWith(".dcm") || filename.toLowerCase().endsWith(".nii") || filename.toLowerCase().endsWith(".nii.gz")
 
       let primaryPathologyCandidate = "Consolidation"
