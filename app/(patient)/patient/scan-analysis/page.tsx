@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { UploadCloud, FileText, Activity, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Cpu, Stethoscope, Layers, ShieldCheck, Zap, Image as ImageIcon, Eye, X, Trash2, Calendar, Lock } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
+import { InteractiveScanViewer } from "@/components/InteractiveScanViewer"
 
 export default function ScanAnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -461,80 +462,38 @@ export default function ScanAnalysisPage() {
 
               {results && (
                 <div className="space-y-6">
-                  {/* Scan Display Image View & Meta info */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                    {/* Scan Image Render Box */}
-                    {imagePreviewUrl ? (
-                      <div className="md:col-span-1 border rounded-2xl p-2 bg-black/60 flex items-center justify-center max-h-64 overflow-hidden relative">
-                        <div className="relative inline-block max-h-60 h-full">
-                          <img
-                            src={imagePreviewUrl}
-                            alt={results.fileName}
-                            className="object-contain h-full w-auto mx-auto rounded-lg"
-                          />
-                          {results.bounding_boxes && results.bounding_boxes.length > 0 && (
-                            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
-                              {results.bounding_boxes.map((box: any, idx: number) => (
-                                <g key={idx}>
-                                  <rect
-                                    x={box.x_min}
-                                    y={box.y_min}
-                                    width={box.x_max - box.x_min}
-                                    height={box.y_max - box.y_min}
-                                    fill="none"
-                                    stroke="#ef4444"
-                                    strokeWidth="6"
-                                    className="animate-pulse"
-                                  />
-                                  <rect
-                                    x={box.x_min}
-                                    y={box.y_min - 32}
-                                    width="160"
-                                    height="32"
-                                    fill="#ef4444"
-                                  />
-                                  <text
-                                    x={box.x_min + 8}
-                                    y={box.y_min - 10}
-                                    fill="white"
-                                    fontSize="18"
-                                    fontWeight="bold"
-                                  >
-                                    {box.label} {(box.confidence * 100).toFixed(0)}%
-                                  </text>
-                                </g>
-                              ))}
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="md:col-span-1 border rounded-2xl p-6 bg-muted/40 flex flex-col items-center justify-center text-center text-muted-foreground">
-                        <ImageIcon className="h-10 w-10 mb-2 opacity-50" />
-                        <p className="text-xs font-semibold">3D Volume / Scan Binary</p>
-                      </div>
-                    )}
-
-                    {/* Metadata Header Cards */}
-                    <div className="md:col-span-2 grid grid-cols-2 gap-3 p-4 rounded-2xl bg-card border border-border/80">
-                      <div>
-                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Modality</span>
-                        <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modality}</p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">AI Engine</span>
-                        <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modelUsed}</p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Primary Indicator</span>
-                        <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.pathologies?.[0]?.name || "N/A"}</p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Inference Speed</span>
-                        <p className="font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{results.executionTimeSeconds}s</p>
-                      </div>
+                  {/* Metadata Header Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-card border border-border/80">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Modality</span>
+                      <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modality}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">AI Engine</span>
+                      <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modelUsed}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Primary Indicator</span>
+                      <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.pathologies?.[0]?.name || "N/A"}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Inference Speed</span>
+                      <p className="font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{results.executionTimeSeconds}s</p>
                     </div>
                   </div>
+
+                  {/* Interactive Scan Viewer Canvas */}
+                  {imagePreviewUrl && (
+                    <InteractiveScanViewer 
+                      imageUrl={imagePreviewUrl} 
+                      findings={(results.bounding_boxes || []).map((box: any) => ({
+                        label: box.label,
+                        confidence: parseFloat((box.confidence * 100).toFixed(1)),
+                        coordinates: { x1: box.x_min, y1: box.y_min, x2: box.x_max, y2: box.y_max },
+                        explanation: `Spatial saliency and pixel discontinuity mapped to ${box.label} signatures in this specific anatomical region.`
+                      }))} 
+                    />
+                  )}
 
                   {/* AI Summary Banner */}
                   <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-foreground">
