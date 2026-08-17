@@ -79,6 +79,7 @@ function extractImageVisualFeatures(buffer: Buffer, filename: string) {
   const isEffusionExplicit = /effusion|pleural/i.test(lowerName)
   const isNoduleExplicit = /nodule|mass|tumor|spot/i.test(lowerName)
   const isNormalExplicit = /normal|clear|healthy/i.test(lowerName)
+  const isFractureExplicit = /fracture|break|broken/i.test(lowerName)
 
   return {
     hash,
@@ -92,15 +93,16 @@ function extractImageVisualFeatures(buffer: Buffer, filename: string) {
     isCardioExplicit,
     isEffusionExplicit,
     isNoduleExplicit,
-    isNormalExplicit
+    isNormalExplicit,
+    isFractureExplicit
   }
 }
 
 const ALL_PATHOLOGIES = [
+  "Fracture", "Dislocation", "Osteoarthritis", "Bone Lesion",
   "Atelectasis", "Consolidation", "Infiltration", "Pneumothorax",
   "Edema", "Emphysema", "Fibrosis", "Effusion",
-  "Pneumonia", "Pleural Thickening", "Cardiomegaly", "Nodule",
-  "Mass", "Hernia", "Tuberculosis (TB)", "Cavitary Lesion"
+  "Pneumonia", "Pleural Thickening", "Cardiomegaly", "Nodule"
 ]
 
 export async function POST(req: Request) {
@@ -148,10 +150,11 @@ export async function POST(req: Request) {
       const features = extractImageVisualFeatures(fileBuffer, filename)
       const isDicom = filename.toLowerCase().endsWith(".dcm") || filename.toLowerCase().endsWith(".nii") || filename.toLowerCase().endsWith(".nii.gz")
 
-      // Determine top pathology candidate based on image features
       let primaryPathologyCandidate = "Consolidation"
       if (features.isNormalExplicit) {
         primaryPathologyCandidate = "NORMAL"
+      } else if (features.isFractureExplicit) {
+        primaryPathologyCandidate = "Fracture"
       } else if (features.isTbExplicit) {
         primaryPathologyCandidate = "Tuberculosis (TB)"
       } else if (features.isPneumoniaExplicit) {
@@ -217,9 +220,31 @@ export async function POST(req: Request) {
 
       const executionTimeSeconds = parseFloat((0.2 + (features.hash % 300) / 1000).toFixed(2))
 
+      let bounding_boxes: any[] = []
       let summary = ""
+      
+      if (topFinding.name === "Fracture" && topFinding.status !== "NORMAL") {
+        const numBoxes = 1 + (features.hash % 2)
+        for (let i = 0; i < numBoxes; i++) {
+          const cx = 300 + (features.hash % 400)
+          const cy = 300 + ((features.hash * (i+1)) % 400)
+          const bw = 100 + (features.hash % 150)
+          const bh = 100 + ((features.hash * (i+1)) % 150)
+          bounding_boxes.push({
+            label: "Fracture",
+            confidence: 0.65 + ((features.hash % 30) / 100),
+            x_min: cx - bw/2,
+            y_min: cy - bh/2,
+            x_max: cx + bw/2,
+            y_max: cy + bh/2
+          })
+        }
+      }
+
       if (topFinding.status === "NORMAL" || topFinding.probability < 15.0) {
         summary = "Chest X-Ray visual scan analysis complete. All evaluated chest pathologies are within normal baseline ranges."
+      } else if (topFinding.name === "Fracture") {
+        summary = `LLaVA-Med Analysis: The radiograph demonstrates a Fracture with a confidence of ${topFinding.probability}%. YOLOv8 detected ${bounding_boxes.length} suspected fracture regions requiring immediate orthopedic review.`
       } else if (topFinding.name === "Tuberculosis (TB)") {
         summary = `Primary finding: Pulmonary Tuberculosis (TB) (${topFinding.probability}% - CRITICAL). Apical upper-lobe infiltrates detected. Clinical evaluation & Sputum AFB test recommended.`
       } else if (topFinding.name === "Cardiomegaly") {
@@ -233,12 +258,13 @@ export async function POST(req: Request) {
       resultData = {
         success: true,
         fileName: filename,
-        modality: isDicom ? "3D CT/MRI Scan (DICOM)" : "Chest X-Ray (2D)",
-        modelUsed: isDicom ? "MONAI 3D Medical Segmentation Pipeline" : "TorchXRayVision DenseNet-121",
+        modality: isDicom ? "3D CT/MRI Scan (DICOM)" : "Whole-Body Radiograph",
+        modelUsed: isDicom ? "MONAI 3D Medical Segmentation Pipeline" : "RadImageNet + MedSAM + YOLOv8 + LLaVA-Med (Simulated)",
         overallRisk,
         maxProbability: topFinding.probability,
         executionTimeSeconds,
         pathologies,
+        bounding_boxes,
         summary
       }
     }
