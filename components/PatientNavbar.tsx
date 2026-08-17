@@ -56,13 +56,21 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
           {userName && (
-            <div className="flex items-center">
-              <span className="text-sm font-medium text-foreground mr-3">
+            <div className={`flex items-center p-1.5 rounded-full pl-4 pr-1.5 transition-all duration-500 ${
+              subscriptionTier === "QURIX_PLUS" 
+                ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.15)]" 
+                : ""
+            }`}>
+              <span className={`text-sm font-medium mr-3 ${
+                subscriptionTier === "QURIX_PLUS"
+                  ? "text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 font-bold"
+                  : "text-foreground"
+              }`}>
                 Hello, {userName}
               </span>
               {subscriptionTier === "QURIX_PLUS" && (
-                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 py-1 rounded-full shadow-sm">
-                  <Sparkles className="h-3 w-3" /> QURIX Plus
+                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-2.5 py-1.5 rounded-full shadow-md animate-gradient-x">
+                  <Sparkles className="h-3 w-3 text-amber-300 animate-pulse" /> QURIX Plus
                 </span>
               )}
             </div>
