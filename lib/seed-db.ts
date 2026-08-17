@@ -220,20 +220,20 @@ export async function seedDatabase() {
 
     const priya = await prisma.user.upsert({
       where: { email: "priya@demo.com" },
-      update: { passwordHash: demoPasswordHash, subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
-      create: { email: "priya@demo.com", passwordHash: demoPasswordHash, name: "Priya Sharma", role: "PATIENT", subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" }
+      update: { passwordHash: demoPasswordHash, subscriptionTier: "FREE", paymentStatus: "NONE" },
+      create: { email: "priya@demo.com", passwordHash: demoPasswordHash, name: "Priya Sharma", role: "PATIENT", subscriptionTier: "FREE", paymentStatus: "NONE" }
     })
 
     await prisma.user.upsert({
       where: { email: "sankalp@demo.com" },
-      update: { passwordHash: demoPasswordHash, subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
-      create: { email: "sankalp@demo.com", passwordHash: demoPasswordHash, name: "Sankalp Verma", role: "PATIENT", subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" }
+      update: { passwordHash: demoPasswordHash, subscriptionTier: "FREE", paymentStatus: "NONE" },
+      create: { email: "sankalp@demo.com", passwordHash: demoPasswordHash, name: "Sankalp Verma", role: "PATIENT", subscriptionTier: "FREE", paymentStatus: "NONE" }
     })
 
     await prisma.user.upsert({
       where: { email: "utkarsh@demo.com" },
-      update: { passwordHash: demoPasswordHash, subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
-      create: { email: "utkarsh@demo.com", passwordHash: demoPasswordHash, name: "Utkarsh Singh", role: "PATIENT", subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" }
+      update: { passwordHash: demoPasswordHash, subscriptionTier: "FREE", paymentStatus: "NONE" },
+      create: { email: "utkarsh@demo.com", passwordHash: demoPasswordHash, name: "Utkarsh Singh", role: "PATIENT", subscriptionTier: "FREE", paymentStatus: "NONE" }
     })
 
     await prisma.user.upsert({
