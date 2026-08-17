@@ -10,13 +10,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const users = await prisma.user.findMany({
+    const pendingUsers = await prisma.user.findMany({
       where: { paymentStatus: "PENDING_APPROVAL" },
       select: { id: true, name: true, email: true, createdAt: true },
       orderBy: { createdAt: "desc" }
     })
 
-    return NextResponse.json({ success: true, users })
+    const activeUsers = await prisma.user.findMany({
+      where: { subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
+      select: { id: true, name: true, email: true, createdAt: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" }
+    })
+
+    return NextResponse.json({ success: true, users: pendingUsers, activeUsers })
   } catch (error: any) {
     console.error("Admin subscriptions fetch error:", error)
     return NextResponse.json({ error: "Failed to fetch pending subscriptions." }, { status: 500 })
