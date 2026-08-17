@@ -8,6 +8,8 @@ export async function createTablesIfNotExist() {
       "passwordHash" TEXT NOT NULL,
       "name" TEXT,
       "role" TEXT NOT NULL DEFAULT 'PATIENT',
+      "subscriptionTier" TEXT NOT NULL DEFAULT 'FREE',
+      "paymentStatus" TEXT NOT NULL DEFAULT 'NONE',
       "accountStatus" TEXT NOT NULL DEFAULT 'ACTIVE',
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`,
@@ -216,26 +218,26 @@ export async function seedDatabase() {
 
     const priya = await prisma.user.upsert({
       where: { email: "priya@demo.com" },
-      update: { passwordHash: demoPasswordHash },
-      create: { email: "priya@demo.com", passwordHash: demoPasswordHash, name: "Priya Sharma", role: "PATIENT" }
+      update: { passwordHash: demoPasswordHash, subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
+      create: { email: "priya@demo.com", passwordHash: demoPasswordHash, name: "Priya Sharma", role: "PATIENT", subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" }
     })
 
     await prisma.user.upsert({
       where: { email: "sankalp@demo.com" },
-      update: { passwordHash: demoPasswordHash },
-      create: { email: "sankalp@demo.com", passwordHash: demoPasswordHash, name: "Sankalp Verma", role: "PATIENT" }
+      update: { passwordHash: demoPasswordHash, subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
+      create: { email: "sankalp@demo.com", passwordHash: demoPasswordHash, name: "Sankalp Verma", role: "PATIENT", subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" }
     })
 
     await prisma.user.upsert({
       where: { email: "utkarsh@demo.com" },
-      update: { passwordHash: demoPasswordHash },
-      create: { email: "utkarsh@demo.com", passwordHash: demoPasswordHash, name: "Utkarsh Singh", role: "PATIENT" }
+      update: { passwordHash: demoPasswordHash, subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
+      create: { email: "utkarsh@demo.com", passwordHash: demoPasswordHash, name: "Utkarsh Singh", role: "PATIENT", subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" }
     })
 
     await prisma.user.upsert({
       where: { email: "tejas@demo.com" },
-      update: { passwordHash: demoPasswordHash },
-      create: { email: "tejas@demo.com", passwordHash: demoPasswordHash, name: "Tejas Vishwakarma", role: "PATIENT" }
+      update: { passwordHash: demoPasswordHash, subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" },
+      create: { email: "tejas@demo.com", passwordHash: demoPasswordHash, name: "Tejas Vishwakarma", role: "PATIENT", subscriptionTier: "QURIX_PLUS", paymentStatus: "ACTIVE" }
     })
 
     await prisma.user.upsert({
