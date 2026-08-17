@@ -7,6 +7,15 @@ import { GoogleGenAI } from "@google/genai"
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "dummy" })
 
+// Helper to timeout long-running Gemini calls
+const withTimeout = <T>(promise: Promise<T>, ms: number = 6000): Promise<T> => {
+  let timeoutId: NodeJS.Timeout
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("Gemini API Timeout")), ms)
+  })
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId))
+}
+
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
@@ -165,14 +174,14 @@ export async function POST(req: Request) {
             "probability": 95,
             "status": "NORMAL" | "MODERATE" | "CRITICAL"
           }`
-          const visionResponse = await ai.models.generateContent({
+          const visionResponse = await withTimeout(ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: [
               visionPrompt,
               { inlineData: { data: base64Data, mimeType } }
             ],
             config: { responseMimeType: "application/json" }
-          })
+          }), 5000)
           const visionJson = JSON.parse(visionResponse.text || "{}")
           if (visionJson.topDiagnosis) {
             primaryPathologyCandidate = visionJson.topDiagnosis
@@ -339,8 +348,8 @@ Include these sections:
 Keep it realistic, highly accurate, and extremely professional.`
 
         const [summaryResponse, reportResponse] = await Promise.all([
-          ai.models.generateContent({ model: "gemini-2.5-flash", contents: summaryPrompt }),
-          ai.models.generateContent({ model: "gemini-2.5-flash", contents: reportPrompt })
+          withTimeout(ai.models.generateContent({ model: "gemini-2.5-flash", contents: summaryPrompt }), 5000),
+          withTimeout(ai.models.generateContent({ model: "gemini-2.5-flash", contents: reportPrompt }), 5000)
         ])
 
         if (summaryResponse.text) {
