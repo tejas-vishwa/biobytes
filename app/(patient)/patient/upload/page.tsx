@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UploadCloud, FileText, Camera, X, Pill, Activity, CheckCircle2, AlertTriangle, FileSpreadsheet, Loader2 } from "lucide-react"
+import { UploadCloud, FileText, Camera, X, Pill, Activity, CheckCircle2, AlertTriangle, FileSpreadsheet, Loader2, Lock } from "lucide-react"
 import DocumentUploadLoader from "@/components/DocumentUploadLoader"
 
 export const dynamic = "force-dynamic"
