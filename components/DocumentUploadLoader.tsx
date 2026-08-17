@@ -7,11 +7,11 @@ export default function DocumentUploadLoader() {
   // Cycle through text to keep the user engaged while waiting
   useEffect(() => {
     const messages = [
-      'Extracting Raw Document Text...',
-      'Filtering OCR Noise...',
-      'Normalizing 100+ Clinical Biomarkers...',
-      'Mapping Data to Digital Twin...',
-      'Generating Plain-English Summary...',
+      "Taking a mindful look at your report...",
+      "Translating complex clinical data into clarity...",
+      "Organizing your health journey with care...",
+      "Connecting your biomarker trends...",
+      "Almost ready—bringing your wellness picture into focus..."
     ];
     let i = 0;
     const interval = setInterval(() => {
