@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
-import { Loader2, UploadCloud, Building2, User, KeyRound, ArrowRight } from "lucide-react"
+import { Loader2, UploadCloud, Building2, User, KeyRound, ArrowRight, Activity } from "lucide-react"
 
 export default function LabOnboardingPage() {
   const { toast } = useToast()
