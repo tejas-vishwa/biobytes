@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QURIX Plus - Executive Clinical Dashboard</title>
+  <!-- Embed Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* 1. Base Print & CSS Reset Setup */
+    :root {
+      --primary-dark: #0f172a;
+      --primary-teal: #0d9488;
+      --bg-light: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #334155;
+      --text-muted: #64748b;
+      
+      /* Triage Colors */
+      --critical: #E63946;
+      --warning: #F59E0B;
+      --optimal: #00A68A;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #e2e8f0; /* Darker outside print for dev view */
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* A4 PDF Setup */
+    @page {
+      size: A4;
+      margin: 0mm;
+    }
+
+    .a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      background: var(--bg-light);
+      margin: 0 auto;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media print {
+      body { background-color: white; }
+      .a4-page { box-shadow: none; margin: 0; width: 100%; height: 100%; page-break-after: always; }
+      .no-break { page-break-inside: avoid; }
+    }
+
+    /* 2. Header & Footer (Fixed Repeating Layout) */
+    .header {
+      background: var(--primary-dark);
+      color: white;
+      padding: 12mm 15mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid var(--primary-teal);
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo svg {
+      width: 32px;
+      height: 32px;
+      color: var(--primary-teal);
+    }
+
+    .brand-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .brand-subtitle {
+      font-size: 10px;
+      color: var(--primary-teal);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .patient-meta {
+      text-align: right;
+    }
+
+    .patient-meta h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .patient-meta p {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .footer {
+      background: var(--surface);
+      border-top: 1px solid #e2e8f0;
+      padding: 8mm 15mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: auto;
+    }
+
+    .footer a {
+      color: var(--primary-teal);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* 3. Main Content Grid */
+    .content {
+      padding: 15mm;
+      flex: 1;
+    }
+
+    .report-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-bottom: 5px;
+    }
+
+    .report-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10mm;
+      max-width: 80%;
+      line-height: 1.5;
+    }
+
+    /* Summary Triage Bar */
+    .triage-summary {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 10mm;
+    }
+
+    .triage-card {
+      flex: 1;
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 15px;
+      border-left: 4px solid #ccc;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .triage-card.critical { border-color: var(--critical); }
+    .triage-card.warning { border-color: var(--warning); }
+    .triage-card.optimal { border-color: var(--optimal); }
+
+    .triage-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+    
+    .critical .triage-value { color: var(--critical); }
+    .warning .triage-value { color: var(--warning); }
+
+    .triage-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* 4. Biological Systems Grouping */
+    .system-group {
+      margin-bottom: 8mm;
+      page-break-inside: avoid;
+    }
+
+    .system-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .system-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--primary-dark);
+      color: white;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .system-icon svg { width: 14px; height: 14px; }
+    
+    .system-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    /* 5. Dynamic Gauges & Biomarker Rows */
+    .biomarker-row {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 12px 15px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      border: 1px solid #f1f5f9;
+    }
+
+    .biomarker-info {
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    .bm-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 2px;
+    }
+
+    .bm-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .biomarker-value-box {
+      width: 80px;
+      text-align: right;
+      padding-right: 20px;
+    }
+
+    .bm-value {
+      font-size: 16px;
+      font-weight: 800;
+    }
+    
+    .val-critical { color: var(--critical); }
+    .val-warning { color: var(--warning); }
+
+    .bm-unit {
+      font-size: 9px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* SVG Gauge Track */
+    .gauge-container {
+      flex: 1;
+      position: relative;
+      height: 30px;
+      display: flex;
+      align-items: center;
+    }
+
+    .gauge-track {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, #FEE2E2 0%, #D1FAE5 20%, #D1FAE5 80%, #FEE2E2 100%);
+      border-radius: 10px;
+      position: relative;
+    }
+
+    /* Different backgrounds based on typical ranges */
+    .track-low-high { background: linear-gradient(90deg, #FEE2E2 0%, #D1FAE5 20%, #D1FAE5 80%, #FEE2E2 100%); }
+    .track-high-bad { background: linear-gradient(90deg, #D1FAE5 0%, #D1FAE5 70%, #FEF3C7 80%, #FEE2E2 100%); }
+    .track-low-bad { background: linear-gradient(90deg, #FEE2E2 0%, #FEF3C7 20%, #D1FAE5 30%, #D1FAE5 100%); }
+
+    /* The Plot Node */
+    .gauge-node {
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: white;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 3px currentColor, 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .node-critical { color: var(--critical); z-index: 10; }
+    .node-warning { color: var(--warning); z-index: 10; }
+
+    /* Gauge Ref Labels */
+    .gauge-labels {
+      position: absolute;
+      top: -14px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    /* 6. Actionable Links */
+    .action-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--primary-dark);
+      color: white !important;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-top: 10mm;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Document Outline Bookmarks (Invisible but parsable by PDF generators) -->
+  <a name="Hematology"></a>
+  <a name="Endocrinology"></a>
+  <a name="Cardiac"></a>
+  <a name="Renal"></a>
+
+  <div class="a4-page">
+    
+    <!-- HEADER -->
+    <div class="header no-break">
+      <div class="header-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>
+        <div>
+          <div class="brand-title">QURIX Plus</div>
+          <div class="brand-subtitle">Executive Health Passport</div>
+        </div>
+      </div>
+      <div class="patient-meta">
+        <h2>ID: QX-88294A</h2>
+        <p>Date Generated: Aug 20, 2026</p>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="content">
+      
+      <h1 class="report-title">Biomarker Exception Report</h1>
+      <p class="report-desc">
+        This automated executive summary isolates critical and warning analytes from your recent upload. Values plotted outside the green safe zone require immediate medical review.
+      </p>
+
+      <!-- Triage Summary -->
+      <div class="triage-summary no-break">
+        <div class="triage-card critical">
+          <div class="triage-value">8</div>
+          <div class="triage-label">Critical Alerts</div>
+        </div>
+        <div class="triage-card warning">
+          <div class="triage-value">3</div>
+          <div class="triage-label">Warning Alerts</div>
+        </div>
+        <div class="triage-card optimal">
+          <div class="triage-value">89</div>
+          <div class="triage-label">Optimal Biomarkers</div>
+        </div>
+      </div>
+
+      <!-- SYSTEM 1: Endocrinology / Thyroid / Hormones -->
+      <div class="system-group">
+        <div class="system-header">
+          <div class="system-icon">
+            <!-- DNA/Hormone Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="system-title">Endocrinology & Thyroid</div>
+        </div>
+
+        <!-- Biomarker Row (Critical) -->
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Total T3</div>
+            <div class="bm-meta">Ref: 1.30 - 3.10</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">1.15</div>
+            <div class="bm-unit">nmol/L</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0.5</span><span>1.30</span><span>3.10</span><span>4.0</span></div>
+            <div class="gauge-track track-low-high">
+              <!-- Plotted at ~18% (Low Critical) -->
+              <div class="gauge-node node-critical" style="left: 18%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Free T4</div>
+            <div class="bm-meta">Ref: 12.0 - 22.0</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">4.0</div>
+            <div class="bm-unit">pmol/L</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span>12.0</span><span>22.0</span><span>30.0</span></div>
+            <div class="gauge-track track-low-high">
+              <div class="gauge-node node-critical" style="left: 10%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Luteinizing Hormone (LH)</div>
+            <div class="bm-meta">Ref: 1.5 - 9.3</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">85.0</div>
+            <div class="bm-unit">mIU/mL</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span>1.5</span><span>9.3</span><span>100.0</span></div>
+            <div class="gauge-track track-high-bad">
+              <!-- Plotted at 85% (High Critical) -->
+              <div class="gauge-node node-critical" style="left: 85%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Estradiol</div>
+            <div class="bm-meta">Ref: 12.5 - 166.0</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">2.0</div>
+            <div class="bm-unit">pg/mL</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span>12.5</span><span>166.0</span><span>200.0</span></div>
+            <div class="gauge-track track-low-bad">
+              <div class="gauge-node node-critical" style="left: 5%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM 2: Hematology & Coagulation -->
+      <div class="system-group">
+        <div class="system-header">
+          <div class="system-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          </div>
+          <div class="system-title">Hematology & Coagulation</div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Platelets</div>
+            <div class="bm-meta">Ref: 150 - 450</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">2.5</div>
+            <div class="bm-unit">10^9/L</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span>150</span><span>450</span><span>600</span></div>
+            <div class="gauge-track track-low-high">
+              <!-- Extremely low -->
+              <div class="gauge-node node-critical" style="left: 2%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Prothrombin Time (PT)</div>
+            <div class="bm-meta">Ref: 11.0 - 13.5</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">4.0</div>
+            <div class="bm-unit">sec</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span>11.0</span><span>13.5</span><span>25.0</span></div>
+            <div class="gauge-track track-low-high">
+              <div class="gauge-node node-critical" style="left: 10%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM 3: Cardiac & Immunology -->
+      <div class="system-group">
+        <div class="system-header">
+          <div class="system-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
+          </div>
+          <div class="system-title">Cardiac & Immunology</div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">CPK-MB</div>
+            <div class="bm-meta">Ref: < 5.0</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">12.0</div>
+            <div class="bm-unit">ng/mL</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span></span><span>5.0</span><span>20.0</span></div>
+            <div class="gauge-track track-high-bad">
+              <div class="gauge-node node-critical" style="left: 70%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">ANA</div>
+            <div class="bm-meta">Ref: < 20.0</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-critical">38.0</div>
+            <div class="bm-unit">IU/mL</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span></span><span>20.0</span><span>50.0</span></div>
+            <div class="gauge-track track-high-bad">
+              <div class="gauge-node node-critical" style="left: 80%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM 4: Warnings (Renal, Vitamins, Metabolic) -->
+      <div class="system-group">
+        <div class="system-header">
+          <div class="system-icon" style="background: var(--warning);">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="system-title" style="color: var(--warning);">Clinical Warnings</div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Vitamin D</div>
+            <div class="bm-meta">Ref: 30.0 - 100.0</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-warning">25.0</div>
+            <div class="bm-unit">ng/mL</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>10.0</span><span>30.0</span><span>100.0</span><span>150.0</span></div>
+            <div class="gauge-track track-low-bad">
+              <div class="gauge-node node-warning" style="left: 15%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Blood Urea</div>
+            <div class="bm-meta">Ref: 2.5 - 7.1</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-warning">11.8</div>
+            <div class="bm-unit">mmol/L</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span>2.5</span><span>7.1</span><span>15.0</span></div>
+            <div class="gauge-track track-high-bad">
+              <div class="gauge-node node-warning" style="left: 75%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="biomarker-row">
+          <div class="biomarker-info">
+            <div class="bm-name">Cholesterol/HDL</div>
+            <div class="bm-meta">Ref: < 5.0</div>
+          </div>
+          <div class="biomarker-value-box">
+            <div class="bm-value val-warning">2.64</div>
+            <div class="bm-unit">Ratio</div>
+          </div>
+          <div class="gauge-container">
+            <div class="gauge-labels"><span>0</span><span></span><span>5.0</span><span>10.0</span></div>
+            <div class="gauge-track track-high-bad">
+              <!-- In range, but maybe marked warning via user context? Actually 2.64 is normal if ref < 5.0, but user labeled it warning. Let's plot it as a low warning -->
+              <div class="gauge-node node-warning" style="left: 30%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Call To Action for Live Portal -->
+      <a href="https://qurix.com/patient/dashboard" class="action-button no-break" target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        Consult Doctor on QURIX Portal
+      </a>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer no-break">
+      <div>This document was auto-generated by the QURIX Plus Intelligence Engine.</div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: Detailed Clinical Summary -->
+  <div class="a4-page">
+    <div class="header no-break">
+      <div class="header-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>
+        <div>
+          <div class="brand-title">QURIX Plus</div>
+          <div class="brand-subtitle">Executive Health Passport</div>
+        </div>
+      </div>
+      <div class="patient-meta">
+        <h2>ID: QX-88294A</h2>
+        <p>Date Generated: Aug 20, 2026</p>
+      </div>
+    </div>
+
+    <div class="content">
+      <h1 class="report-title">Detailed Clinical Summary</h1>
+      <p class="report-desc">Comprehensive interpretation of your out-of-range biomarkers and recommended clinical pathways.</p>
+
+      <div class="system-group" style="margin-bottom: 25px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">Endocrinology & Thyroid Assessment</h3>
+        <p style="font-size: 13px; line-height: 1.6; color: var(--text-main); margin-bottom: 15px;">
+          Your thyroid panel indicates a critical imbalance, specifically a suppressed <strong>Total T3 (1.15 nmol/L)</strong> paired with an elevated <strong>Free T4 (4.0 pmol/L)</strong>. This asynchronous presentation often suggests thyroid dysregulation (e.g., potential conversion issues from T4 to T3, or early-stage hyperthyroidism with suppressed T3 syndrome). Simultaneously, your <strong>Luteinizing Hormone (LH)</strong> is critically elevated at <strong>85.0 mIU/mL</strong>, alongside a suppressed <strong>Estradiol</strong> level of <strong>2.0 pg/mL</strong>. In conjunction, these hormonal markers suggest a state of primary gonadal insufficiency or menopausal transition, requiring an immediate endocrinological consultation to discuss hormone replacement therapies (HRT) or further pituitary evaluation.
+        </p>
+      </div>
+
+      <div class="system-group" style="margin-bottom: 25px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">Hematology & Coagulation Profile</h3>
+        <p style="font-size: 13px; line-height: 1.6; color: var(--text-main); margin-bottom: 15px;">
+          A severe state of <strong>Thrombocytopenia</strong> is noted, with your <strong>Platelets</strong> dropping to a critical low of <strong>2.5 x 10^9/L</strong>. This creates an immediate risk for spontaneous bleeding. Paired with an abnormally low <strong>Prothrombin Time (PT) of 4.0 sec</strong>, your coagulation cascade is displaying highly atypical behavior (a hypercoagulable PT combined with severe bleeding risk from low platelets). This complex hematological presentation warrants an emergency hematology referral for a peripheral blood smear and potential bone marrow evaluation to rule out acute marrow suppression or consumptive coagulopathies (like DIC).
+        </p>
+      </div>
+
+      <div class="system-group" style="margin-bottom: 25px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">Cardiac & Immunological Markers</h3>
+        <p style="font-size: 13px; line-height: 1.6; color: var(--text-main); margin-bottom: 15px;">
+          Your <strong>CPK-MB</strong> levels are significantly elevated at <strong>12.0 ng/mL</strong>, indicating active myocardial muscle stress or injury. If you are experiencing chest discomfort or shortness of breath, please seek emergency care immediately. Additionally, an elevated <strong>ANA titer (38.0 IU/mL)</strong> has been detected. The combination of myocardial stress and autoimmune flags (positive ANA) may point towards an inflammatory cardiomyopathy or systemic autoimmune response (such as Lupus or Myocarditis) affecting the cardiac tissue. 
+        </p>
+      </div>
+
+      <div class="system-group">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--warning); margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">Metabolic & Nutritional Warnings</h3>
+        <p style="font-size: 13px; line-height: 1.6; color: var(--text-main); margin-bottom: 15px;">
+          Several secondary warnings were flagged in your routine chemistries. A <strong>Vitamin D</strong> deficiency is present (25.0 ng/mL), which can exacerbate autoimmune and bone-density issues over time. Additionally, mildly elevated <strong>Blood Urea (11.8 mmol/L)</strong> suggests slight dehydration or early renal stress, likely secondary to the acute inflammatory states noted above. Increased hydration and a metabolic panel re-test in 2 weeks are advised.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer no-break">
+      <div>This document was auto-generated by the QURIX Plus Intelligence Engine.</div>
+    </div>
+  </div>
+
+</body>
+</html>

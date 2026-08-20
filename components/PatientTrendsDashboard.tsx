@@ -391,116 +391,18 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
     }
   }
 
-  const generatePDF = async () => {
+  const generatePDF = () => {
     setGeneratingPdf(true)
     try {
-      const populatedTrends = trends.filter(t => t.history && t.history.length > 0)
-      
-      let aiSummary = "Based on your recent lab reports, here is an automated clinical summary of your health trends."
-      try {
-        const res = await fetch('/api/generate-summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ metrics: populatedTrends })
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data && data.summary) aiSummary = data.summary
-        }
-      } catch (e) {
-        console.warn("Summary fetch note:", e)
-      }
-
-      const doc = new jsPDF('p', 'mm', 'a4')
-      const pageWidth = doc.internal.pageSize.getWidth()
-      const pageHeight = doc.internal.pageSize.getHeight()
-
-      doc.setFillColor(13, 148, 136)
-      doc.rect(0, 0, pageWidth, 24, 'F')
-      doc.setFont("helvetica", "bold")
-      doc.setFontSize(16)
-      doc.setTextColor(255, 255, 255)
-      doc.text("QURIX Health Tracker", 14, 15)
-      
-      doc.setFontSize(9)
-      doc.setFont("helvetica", "normal")
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - 14, 15, { align: "right" })
-
-      doc.setFontSize(12)
-      doc.setFont("helvetica", "bold")
-      doc.setTextColor(15, 23, 42)
-      doc.text("AI Doctor Health Summary", 14, 32)
-
-      doc.setFillColor(248, 250, 252)
-      doc.setDrawColor(226, 232, 240)
-      
-      const splitSummary = doc.splitTextToSize(aiSummary, pageWidth - 36)
-      const summaryBoxHeight = Math.max(16, (splitSummary.length * 4.5) + 6)
-      
-      doc.rect(14, 36, pageWidth - 28, summaryBoxHeight, 'FD')
-      doc.setFontSize(9)
-      doc.setFont("helvetica", "normal")
-      doc.setTextColor(51, 65, 85)
-      doc.text(splitSummary, 18, 42)
-
-      let currentY = 36 + summaryBoxHeight + 10
-
-      doc.setFontSize(12)
-      doc.setFont("helvetica", "bold")
-      doc.setTextColor(15, 23, 42)
-      doc.text("Tracked Biomarker Trends", 14, currentY)
-      currentY += 6
-
-      for (let i = 0; i < filteredTrends.length; i++) {
-        const trend = filteredTrends[i]
-        const cardEl = document.getElementById(`card-${trend.code}`)
-        if (!cardEl) continue
-
-        try {
-          const canvas = await captureCardCanvas(cardEl)
-          if (!canvas) continue
-
-          const imgData = canvas.toDataURL('image/png')
-          
-          const cardWidth = (pageWidth - 36) / 2
-          const cardHeight = 65
-
-          const isSecondColumn = i % 2 === 1
-          const xPos = isSecondColumn ? 14 + cardWidth + 8 : 14
-          
-          if (!isSecondColumn && i > 0) {
-            currentY += cardHeight + 6
-          }
-
-          if (currentY + cardHeight > pageHeight - 18) {
-            doc.addPage()
-            currentY = 18
-          }
-
-          doc.addImage(imgData, 'PNG', xPos, currentY, cardWidth, cardHeight)
-        } catch (cardErr) {
-          console.warn(`Could not capture card ${trend.code}:`, cardErr)
-        }
-      }
-
-      const totalPages = doc.getNumberOfPages()
-      for (let p = 1; p <= totalPages; p++) {
-        doc.setPage(p)
-        doc.setFontSize(8)
-        doc.setTextColor(148, 163, 184)
-        doc.text(
-          "QURIX Health Report • Confidential • Does not replace professional medical advice.", 
-          14, pageHeight - 8
-        )
-        doc.text(`Page ${p} of ${totalPages}`, pageWidth - 14, pageHeight - 8, { align: "right" })
-      }
-
-      doc.save(`QURIX_Health_Trends_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
+      // Instead of slow client-side html2canvas rendering, open the premium 
+      // QURIX Plus Executive HTML template which natively triggers the print dialog.
+      window.open('/api/qurix-plus-report', '_blank')
     } catch (err: any) {
       console.error("PDF generation failed:", err)
       alert(`PDF Generation Note: ${err?.message || "Failed to generate PDF. Please try again."}`)
     } finally {
-      setGeneratingPdf(false)
+      // Small timeout to let the UI show "Generating..." briefly before resetting
+      setTimeout(() => setGeneratingPdf(false), 1000)
     }
   }
 
