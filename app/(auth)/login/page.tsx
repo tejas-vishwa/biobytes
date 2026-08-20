@@ -212,7 +212,7 @@ export default function LoginPage() {
                       type="button"
                       variant="outline"
                       className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800"
-                      onClick={() => demoLogin("admin@teamqurix.com", "demo1234", "/admin/dashboard")}
+                      onClick={() => demoLogin("admin@teamqurix.com", "demo1234", "/admin")}
                       disabled={loading}
                     >
                       Super Admin
