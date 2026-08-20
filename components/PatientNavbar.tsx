@@ -17,12 +17,10 @@ interface PatientNavbarProps {
 export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-
   const navItems = [
     { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard, desc: "Health overview & metrics" },
-    { name: "Upload", href: "/patient/upload", icon: UploadCloud, desc: "Unified Hub: Reports, Prescriptions & Scans" },
+    { name: "Upload", href: "/patient/upload", icon: UploadCloud, desc: "Unified Hub: Reports & Prescriptions" },
     { name: "Prescriptions", href: "/patient/prescriptions", icon: Pill, desc: "Medicines & OCR symptoms" },
-    { name: "Advance Medical Scan", href: "/patient/scan-analysis", icon: Activity, desc: "X-Ray & CT/MRI Advance Medical Scan analysis" },
     { name: "Trends", href: "/patient/trends", icon: LineChart, desc: "100-test longitudinal charts" },
     { name: "Appointments", href: "/patient/appointments", icon: Calendar, desc: "Doctor bookings & queues" },
     { name: "Profile", href: "/patient/profile", icon: User, desc: "Manage personal information" },

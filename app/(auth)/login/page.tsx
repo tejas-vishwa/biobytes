@@ -202,6 +202,22 @@ export default function LoginPage() {
                       Dr. Rahul Verma
                     </Button>
                   </div>
+
+                  {/* Admin Demo Account */}
+                  <div className="w-full space-y-2">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin (password: demo1234)
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800"
+                      onClick={() => demoLogin("admin@teamqurix.com", "demo1234", "/admin/dashboard")}
+                      disabled={loading}
+                    >
+                      Super Admin
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

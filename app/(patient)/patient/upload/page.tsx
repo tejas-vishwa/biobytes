@@ -161,12 +161,12 @@ export default function UnifiedUploadPage() {
           <UploadCloud className="h-7 w-7 sm:h-8 sm:w-8 text-primary" /> Medical Document Upload Hub
         </h1>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Upload and extract data from your <strong>Lab Reports</strong>, <strong>Doctor Prescriptions</strong>, and <strong>AI Diagnostic Scans</strong>.
+          Upload and extract data from your <strong>Lab Reports</strong> and <strong>Doctor Prescriptions</strong>.
         </p>
       </div>
 
-      {/* Category Selection Tabs (Lab Reports, Prescriptions, AI Scans) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Category Selection Tabs (Lab Reports, Prescriptions) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => setSelectedCategory("REPORT")}
@@ -204,50 +204,20 @@ export default function UnifiedUploadPage() {
             <p className="text-xs text-muted-foreground mt-0.5">Medicines, Dosages & Symptoms</p>
           </div>
         </button>
-
-        <button
-          type="button"
-          onClick={() => setSelectedCategory("SCAN")}
-          className={`p-4 rounded-2xl border text-left transition-all duration-200 shadow-sm flex flex-col justify-between ${
-            selectedCategory === "SCAN"
-              ? "bg-purple-500/15 border-purple-500 text-purple-600 dark:text-purple-400 font-bold shadow"
-              : "bg-card border-border/80 text-muted-foreground hover:bg-accent/50"
-          }`}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <Activity className="h-6 w-6 text-purple-500" />
-            {selectedCategory === "SCAN" && <CheckCircle2 className="h-5 w-5 text-purple-500" />}
-          </div>
-          <div>
-            <p className="text-sm font-extrabold text-foreground">AI Scans</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Chest X-Rays & 3D CT/MRI Scans</p>
-          </div>
-        </button>
       </div>
 
       {/* Upload Zone Card */}
       <Card className="shadow-md border-border/80">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <UploadCloud className="h-5 w-5 text-primary" /> Select {selectedCategory === "SCAN" ? "Medical Scan" : selectedCategory === "PRESCRIPTION" ? "Prescription" : "Lab Report"} Files
+            <UploadCloud className="h-5 w-5 text-primary" /> Select {selectedCategory === "PRESCRIPTION" ? "Prescription" : "Lab Report"} Files
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            Supports PDFs, Images (PNG, JPG, WEBP), and DICOM Medical Scans (.dcm, .nii).
+            Supports PDFs and Images (PNG, JPG, WEBP).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {selectedCategory === "SCAN" && session?.user?.paymentStatus !== "ACTIVE" ? (
-            <div className="border border-indigo-500/30 rounded-2xl p-8 text-center bg-indigo-500/5 cursor-pointer hover:bg-indigo-500/10 transition-colors" onClick={() => router.push("/patient/qurix-plus")}>
-              <div className="h-14 w-14 mx-auto rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3 shadow-inner">
-                <Lock className="h-7 w-7" />
-              </div>
-              <h3 className="text-base font-extrabold text-foreground">Premium Feature Locked</h3>
-              <p className="text-xs text-muted-foreground mt-1 mb-4">3D Radiology AI requires QURIX Plus.</p>
-              <Button onClick={(e) => { e.stopPropagation(); router.push("/patient/qurix-plus"); }} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md rounded-xl">
-                Unlock for Rs 29/month
-              </Button>
-            </div>
-          ) : (
+          {false ? null : (
             <div className="border-2 border-dashed rounded-2xl p-8 text-center hover:bg-muted/40 transition-colors border-primary/30 bg-card active:scale-[0.99] cursor-pointer">
               <input
                 id="unified-file-upload"
