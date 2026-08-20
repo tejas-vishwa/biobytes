@@ -171,8 +171,30 @@ export async function createTablesIfNotExist() {
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL
     );`,
+    `CREATE TABLE IF NOT EXISTS "MedicineReminder" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "patientId" TEXT NOT NULL,
+      "prescriptionId" TEXT,
+      "medicineName" TEXT NOT NULL,
+      "reminderTime" TEXT NOT NULL,
+      "isActive" BOOLEAN NOT NULL DEFAULT 1,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE,
+      FOREIGN KEY ("prescriptionId") REFERENCES "Prescription" ("id") ON DELETE CASCADE
+    );`,
     `ALTER TABLE "User" ADD COLUMN "subscriptionTier" TEXT NOT NULL DEFAULT 'FREE';`,
-    `ALTER TABLE "User" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'NONE';`
+    `ALTER TABLE "User" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'NONE';`,
+    `ALTER TABLE "User" ADD COLUMN "gender" TEXT;`,
+    `ALTER TABLE "User" ADD COLUMN "age" INTEGER;`,
+    `ALTER TABLE "User" ADD COLUMN "location" TEXT;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "yearEstablished" INTEGER;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "contactPerson" TEXT;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "email" TEXT;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "passwordHash" TEXT;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "registrationNo" TEXT;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "certificationUrl" TEXT;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "operationalScope" TEXT;`,
+    `ALTER TABLE "LabPartner" ADD COLUMN "accountStatus" TEXT NOT NULL DEFAULT 'pending';`
   ]
 
   for (const statement of ddlStatements) {
