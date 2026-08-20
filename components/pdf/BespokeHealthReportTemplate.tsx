@@ -31,6 +31,7 @@ export type BespokeReportData = {
   patientDemographics: PatientDemographics
   documentedConditions: DocumentedCondition[]
   currentFlags: CurrentFlag[] // All biomarkers tracked today, both optimal and flagged
+  aiSummary?: string // Optional AI-generated summary overriding hardcoded logic
 }
 
 const styles = `
@@ -177,24 +178,28 @@ const ProceduralExecutiveSummary = ({ data }: { data: BespokeReportData }) => {
 
   if (isCritical) {
     // Generate bespoke string for critical triage
-    let summary = `URGENT REVIEW REQUIRED: We have detected ${criticalFlags.length} critical biomarker anomaly(s) in today's reading. `
+    let summary = data.aiSummary || `URGENT REVIEW REQUIRED: We have detected ${criticalFlags.length} critical biomarker anomaly(s) in today's reading. `
     
-    // Correlate with Documented Conditions
-    const diabeticHistory = data.documentedConditions.find(c => c.condition.toLowerCase().includes("diabet"))
-    const hba1cFlag = criticalFlags.find(f => f.biomarker.toLowerCase().includes("hba1c") || f.biomarker.toLowerCase().includes("glucose"))
-    
-    if (diabeticHistory && hba1cFlag) {
-      summary += `Your ${hba1cFlag.biomarker} is dangerously elevated at ${hba1cFlag.currentValue}${hba1cFlag.unit}. Given your history of ${diabeticHistory.condition} (Diagnosed ${diabeticHistory.diagnosedYear}), this poses a severe immediate risk of hyperglycemia complications. `
+    if (!data.aiSummary) {
+      // Correlate with Documented Conditions
+      const diabeticHistory = data.documentedConditions.find(c => c.condition.toLowerCase().includes("diabet"))
+      const hba1cFlag = criticalFlags.find(f => f.biomarker.toLowerCase().includes("hba1c") || f.biomarker.toLowerCase().includes("glucose"))
+      
+      if (diabeticHistory && hba1cFlag) {
+        summary += `Your ${hba1cFlag.biomarker} is dangerously elevated at ${hba1cFlag.currentValue}${hba1cFlag.unit}. Given your history of ${diabeticHistory.condition} (Diagnosed ${diabeticHistory.diagnosedYear}), this poses a severe immediate risk of hyperglycemia complications. `
+      }
     }
 
-    const cardioHistory = data.documentedConditions.find(c => c.condition.toLowerCase().includes("hyperten") || c.condition.toLowerCase().includes("heart"))
-    const bpFlag = criticalFlags.find(f => f.biomarker.toLowerCase().includes("blood pressure") || f.biomarker.toLowerCase().includes("systolic"))
+    if (!data.aiSummary) {
+      const cardioHistory = data.documentedConditions.find(c => c.condition.toLowerCase().includes("hyperten") || c.condition.toLowerCase().includes("heart"))
+      const bpFlag = criticalFlags.find(f => f.biomarker.toLowerCase().includes("blood pressure") || f.biomarker.toLowerCase().includes("systolic"))
 
-    if (cardioHistory && bpFlag) {
-      summary += `Your ${bpFlag.biomarker} reading of ${bpFlag.currentValue} is critically alarming due to your pre-existing ${cardioHistory.condition}. `
+      if (cardioHistory && bpFlag) {
+        summary += `Your ${bpFlag.biomarker} reading of ${bpFlag.currentValue} is critically alarming due to your pre-existing ${cardioHistory.condition}. `
+      }
+
+      summary += `Please seek immediate medical consultation with your primary care provider.`
     }
-
-    summary += `Please seek immediate medical consultation with your primary care provider.`
 
     return (
       <div className="triage-block critical">
@@ -208,16 +213,16 @@ const ProceduralExecutiveSummary = ({ data }: { data: BespokeReportData }) => {
   }
 
   if (isWellness) {
-    let summary = `EXCELLENT HEALTH MAINTAINED: All ${data.currentFlags.length} tracked biomarkers are perfectly within the optimal clinical reference ranges. `
+    let summary = data.aiSummary || `EXCELLENT HEALTH MAINTAINED: All ${data.currentFlags.length} tracked biomarkers are perfectly within the optimal clinical reference ranges. `
     
-    if (data.documentedConditions.length > 0) {
+    if (!data.aiSummary && data.documentedConditions.length > 0) {
       const activeConditions = data.documentedConditions.filter(c => c.status === "Active" || c.status === "Managed")
       if (activeConditions.length > 0) {
         summary += `You are successfully managing your ${activeConditions.map(c => c.condition).join(" and ")} with no adverse physiological impacts detected today. `
       }
     }
 
-    summary += `Continue your current wellness, diet, and physiological maintenance protocols.`
+    if (!data.aiSummary) summary += `Continue your current wellness, diet, and physiological maintenance protocols.`
 
     return (
       <div className="triage-block wellness">
@@ -237,7 +242,7 @@ const ProceduralExecutiveSummary = ({ data }: { data: BespokeReportData }) => {
         ELEVATED ATTENTION REQUIRED
       </div>
       <div className="triage-summary" style={{ color: "#78350f" }}>
-        We have detected {warningFlags.length} biomarkers trending out of optimal physiological ranges. Minor adjustments to protocol or clinical review is advised to prevent long-term chronicity.
+        {data.aiSummary || `We have detected ${warningFlags.length} biomarkers trending out of optimal physiological ranges. Minor adjustments to protocol or clinical review is advised to prevent long-term chronicity.`}
       </div>
     </div>
   )
