@@ -47,7 +47,7 @@ export async function PUT(
       }
 
       // Send email (fire and forget for this route, or await)
-      await transporter.sendMail(mailOptions).catch(err => {
+      await transporter.sendMail(mailOptions).catch((err: unknown) => {
         console.error("Failed to send welcome email:", err)
       })
     }
