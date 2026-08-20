@@ -216,7 +216,7 @@ export async function seedDatabase() {
       { code: 'HEMOGLOBIN', displayName: 'Hemoglobin', unit: 'g/dL', refMin: 12.0, refMax: 15.5, category: 'CBC' },
       { code: 'RBC', displayName: 'Red Blood Cells', unit: 'mill/µL', refMin: 4.1, refMax: 5.1, category: 'CBC' },
       { code: 'WBC', displayName: 'White Blood Cells', unit: 'thou/µL', refMin: 4.5, refMax: 11.0, category: 'CBC' },
-      { code: 'PLATELETS', displayName: 'Platelets', unit: 'thou/µL', refMin: 150, refMax: 450, category: 'CBC' },
+      { code: 'PLATELETS', displayName: 'Platelets', unit: 'thou/cumm', refMin: 150, refMax: 450, category: 'CBC' },
       { code: 'GLUCOSE_FASTING', displayName: 'Fasting Glucose', unit: 'mg/dL', refMin: 70, refMax: 99, category: 'Diabetes' },
       { code: 'HBA1C', displayName: 'HbA1c', unit: '%', refMin: 4.0, refMax: 5.6, category: 'Diabetes' },
       { code: 'CHOLESTEROL_TOTAL', displayName: 'Total Cholesterol', unit: 'mg/dL', refMin: 125, refMax: 200, category: 'Lipid' },
@@ -228,10 +228,11 @@ export async function seedDatabase() {
     ]
 
     for (const b of biomarkersData) {
-      const existing = await prisma.biomarkerDefinition.findFirst({ where: { code: b.code } })
-      if (!existing) {
-        await prisma.biomarkerDefinition.create({ data: b })
-      }
+      await prisma.biomarkerDefinition.upsert({
+        where: { code: b.code },
+        update: { unit: b.unit },
+        create: b
+      })
     }
 
     const biomarkers = await prisma.biomarkerDefinition.findMany()
