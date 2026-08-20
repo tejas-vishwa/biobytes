@@ -29,7 +29,7 @@ function TrendChartCard({ trend, session }: { trend: any, session: any }) {
   const cutoffDate = new Date()
   cutoffDate.setMonth(cutoffDate.getMonth() - timeFilter)
   
-  const filteredHistory = trend.history.filter((d: any) => new Date(d.date) >= cutoffDate)
+  const filteredHistory = trend.history.filter((d: any) => new Date(d.testDate || d.date) >= cutoffDate)
 
   // Custom Dot renderer
   const CustomDot = (props: any) => {
@@ -99,7 +99,7 @@ function TrendChartCard({ trend, session }: { trend: any, session: any }) {
                   dataKey="id" 
                   tickFormatter={(id) => {
                     const point = filteredHistory.find((d: any) => d.id === id)
-                    return point ? formatDate(point.date) : ''
+                    return point ? formatDate(point.testDate || point.date) : ''
                   }}
                   tick={{ fontSize: 11, fill: '#6b7280' }}
                   axisLine={false}
@@ -141,7 +141,7 @@ function TrendChartCard({ trend, session }: { trend: any, session: any }) {
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload
-                      const exactDate = new Date(data.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                      const exactDate = new Date(data.testDate || data.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
                       
                       const val = data.value
                       let status = "Normal / Optimal"
