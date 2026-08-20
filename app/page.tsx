@@ -14,7 +14,7 @@ export default function Home() {
         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 text-white py-3 px-4 text-center shadow-md relative z-20">
           <Link href="/patient/qurix-plus" className="flex items-center justify-center gap-2 text-sm md:text-base font-semibold hover:opacity-90 transition-opacity">
             <Sparkles className="h-4 w-4 text-amber-300 animate-pulse" />
-            <span>Unlock <strong className="text-amber-300">QURIX Plus</strong> for just Rs 29/month to access 3D AI Medical Scans!</span>
+            <span>Unlock <strong className="text-amber-300">QURIX Plus</strong> for just Rs 29/month to access ADVANCE MEDICAL SCANS!</span>
             <ArrowRight className="h-4 w-4 ml-1" />
           </Link>
         </div>
@@ -24,7 +24,7 @@ export default function Home() {
           <div className="container px-4 md:px-6 max-w-6xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center rounded-full border border-teal-500/30 bg-teal-50 dark:bg-teal-950/50 px-4 py-1.5 text-sm font-medium text-teal-700 dark:text-teal-300 shadow-sm">
               <Calendar className="mr-2 h-4 w-4 text-emerald-500" />
-              <span>Instant Appointment Booking & Live Digital Queue</span>
+              <span>Sync Your Health, Worldwide</span>
             </div>
 
             <div className="space-y-4">
@@ -52,12 +52,6 @@ export default function Home() {
                   Upload your document
                 </Button>
               </Link>
-              <a href="https://github.com/tejas-vishwa/biobytes/actions" target="_blank" rel="noopener noreferrer">
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-600 dark:text-teal-300 font-semibold shadow-sm">
-                  <Smartphone className="mr-2 h-5 w-5" />
-                  Download Android APK
-                </Button>
-              </a>
               <Link href="/doctor/access">
                 <Button size="lg" variant="ghost" className="w-full sm:w-auto h-14 px-6 text-lg rounded-full">
                   <Stethoscope className="mr-2 h-5 w-5 text-teal-600" />

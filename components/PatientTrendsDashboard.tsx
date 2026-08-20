@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Search, FileX, Lock } from "lucide-react"
+import { Download, Search, FileX, Lock, AlertCircle, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from 'recharts'
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
@@ -11,12 +11,263 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
+const TIME_FILTERS = [
+  { label: "1M", months: 1 },
+  { label: "3M", months: 3 },
+  { label: "6M", months: 6 },
+  { label: "1Y", months: 12 },
+  { label: "All", months: 120 }
+]
+
+const formatDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+// Sub-component for individual chart card to manage its own time filter state
+function TrendChartCard({ trend, session, onDownload }: { trend: any, session: any, onDownload: () => void }) {
+  const [timeFilter, setTimeFilter] = useState<number>(6) // Default 6M
+
+  // Filter history based on local time filter
+  const cutoffDate = new Date()
+  cutoffDate.setMonth(cutoffDate.getMonth() - timeFilter)
+  
+  const filteredHistory = trend.history.filter((d: any) => new Date(d.date) >= cutoffDate)
+
+  // Custom Dot renderer
+  const CustomDot = (props: any) => {
+    const { cx, cy, value, payload } = props
+    if (cx == null || cy == null) return null
+
+    const isHigh = trend.refMax !== null && value > trend.refMax
+    const isLow = trend.refMin !== null && value < trend.refMin
+    
+    let fill = "#10b981" // Normal (Green)
+    if (isHigh || isLow) fill = "#ef4444" // Abnormal (Red)
+
+    return (
+      <circle cx={cx} cy={cy} r={props.active ? 6 : 4} stroke="white" strokeWidth={2} fill={fill} />
+    )
+  }
+
+  return (
+    <Card id={`card-${trend.code}`} className="overflow-hidden bg-background/60 backdrop-blur-xl border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-3">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg text-primary">{trend.name}</CardTitle>
+            <CardDescription className="font-medium mt-1">
+              {trend.category}
+            </CardDescription>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-md">
+              {TIME_FILTERS.map(filter => (
+                <button
+                  key={filter.label}
+                  onClick={() => setTimeFilter(filter.months)}
+                  className={`text-[10px] font-bold px-2 py-1 rounded transition-colors ${
+                    timeFilter === filter.months ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {trend.refMin !== null && trend.refMax !== null && (
+                <div className="text-right">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Reference Range</span>
+                  <span className="text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-900">
+                    {trend.refMin} - {trend.refMax} {trend.unit}
+                  </span>
+                </div>
+              )}
+              {filteredHistory.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDownload}
+                  title={session?.user?.paymentStatus === "ACTIVE" ? `Download ${trend.name} Graph` : "Unlock QURIX Plus to Download"}
+                  className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                >
+                  {session?.user?.paymentStatus === "ACTIVE" ? <Download className="h-3 w-3" /> : <Lock className="h-3 w-3 text-indigo-500" />}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-0">
+        {filteredHistory.length > 0 ? (
+          <div className="h-[280px] w-full p-4 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={filteredHistory}
+                margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                <XAxis 
+                  dataKey="id" 
+                  tickFormatter={(id) => {
+                    const point = filteredHistory.find((d: any) => d.id === id)
+                    return point ? formatDate(point.date) : ''
+                  }}
+                  tick={{ fontSize: 11, fill: '#6b7280' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  domain={[
+                    (dataMin: number) => {
+                      const minVal = isNaN(dataMin) || dataMin === Infinity || dataMin === -Infinity ? 0 : dataMin;
+                      let minBound = minVal;
+                      if (trend.refMin !== null && trend.refMin !== undefined) {
+                        minBound = Math.min(minVal, trend.refMin);
+                      }
+                      if (minBound >= 0 && minBound <= 30) {
+                        return 0;
+                      }
+                      return Math.max(0, Math.floor(minBound * 0.85));
+                    },
+                    (dataMax: number) => {
+                      const maxVal = isNaN(dataMax) || dataMax === Infinity || dataMax === -Infinity ? 10 : dataMax;
+                      let maxBound = maxVal;
+                      if (trend.refMax !== null && trend.refMax !== undefined) {
+                        maxBound = Math.max(maxVal, trend.refMax);
+                      }
+                      return Math.ceil(Math.max(maxBound * 1.15, maxBound + 2));
+                    }
+                  ]}
+                  tickFormatter={(val: number) => {
+                    if (isNaN(val)) return ''
+                    const num = Number(val)
+                    return Number.isInteger(num) ? num.toString() : num.toFixed(1)
+                  }}
+                  tick={{ fontSize: 11, fill: '#6b7280' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload
+                      const exactDate = new Date(data.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                      
+                      const val = data.value
+                      let status = "Normal / Optimal"
+                      let statusColor = "text-emerald-500"
+                      let Icon = CheckCircle2
+                      let diffText = ""
+
+                      if (trend.refMax !== null && val > trend.refMax) {
+                        status = "Elevated (High)"
+                        statusColor = "text-red-500"
+                        Icon = TrendingUp
+                        const diff = (val - trend.refMax).toFixed(1)
+                        diffText = `${diff} ${trend.unit} above maximum`
+                      } else if (trend.refMin !== null && val < trend.refMin) {
+                        status = "Critical Low"
+                        statusColor = "text-red-500"
+                        Icon = TrendingDown
+                        const diff = (trend.refMin - val).toFixed(1)
+                        diffText = `${diff} ${trend.unit} below minimum`
+                      }
+
+                      return (
+                        <div className="bg-background/95 backdrop-blur-md p-4 border border-border/50 rounded-xl shadow-xl min-w-[200px]">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-muted-foreground">{exactDate}</span>
+                            <span className={`flex items-center text-xs font-bold ${statusColor}`}>
+                              <Icon className="h-3 w-3 mr-1" /> {status}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-end gap-1 mb-2">
+                            <span className="text-3xl font-extrabold text-foreground">{val}</span>
+                            <span className="text-sm font-medium text-muted-foreground mb-1">{trend.unit}</span>
+                          </div>
+                          
+                          {diffText && (
+                            <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[11px] px-2 py-1 rounded font-medium border border-red-100 dark:border-red-900 mb-2">
+                              {diffText}
+                            </div>
+                          )}
+
+                          <a 
+                            href={`https://www.google.com/search?q=What+causes+${status.toLowerCase().includes('high') ? 'high' : 'low'}+${trend.name}`}
+                            target="_blank"
+                            rel="noopener noreferrer" 
+                            className="text-[10px] font-semibold text-blue-500 hover:underline flex items-center mt-2 pt-2 border-t border-border/50"
+                          >
+                            What causes {status.toLowerCase().includes('high') ? 'high' : 'low'} {trend.name}?
+                          </a>
+                        </div>
+                      )
+                    }
+                    return null
+                  }}
+                />
+                {trend.refMin !== null && trend.refMax !== null && (
+                  <ReferenceArea 
+                    y1={trend.refMin} 
+                    y2={trend.refMax} 
+                    fill="#10b981" 
+                    fillOpacity={0.08} 
+                  />
+                )}
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#94a3b8" 
+                  strokeWidth={2}
+                  activeDot={<CustomDot active />}
+                  dot={<CustomDot />}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="empty-state-chart h-[280px] w-full p-4 relative flex items-center justify-center">
+            <div className="absolute inset-0 p-4 opacity-20 pointer-events-none grayscale">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={[{ id: 1, value: trend.refMax || 100 }, { id: 2, value: trend.refMin || 0 }]} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis dataKey="id" tick={false} axisLine={false} tickLine={false} />
+                  <YAxis domain={['auto', 'auto']} tickFormatter={(val: number) => `${Math.round(Number(val))}`} allowDecimals={false} tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={50} />
+                  <Line type="monotone" dataKey="value" stroke="#9ca3af" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="z-10 flex flex-col items-center justify-center p-6 text-center bg-background/60 backdrop-blur-sm rounded-xl border border-white/20 shadow-sm max-w-[80%]">
+              <div className="h-12 w-12 rounded-full bg-muted/80 flex items-center justify-center mb-3 shadow-inner">
+                <FileX className="h-6 w-6 text-muted-foreground/70" />
+              </div>
+              <h3 className="font-semibold text-foreground/90 mb-1 text-sm">No historical data in this period</h3>
+              <p className="text-xs text-muted-foreground max-w-[200px] mb-4">
+                Select a different time range or upload a report.
+              </p>
+              <Link href="/patient/upload">
+                <Button variant="outline" size="sm" className="h-8 text-xs rounded-full shadow-sm hover:shadow-md transition-all bg-background/50">
+                  Upload Report
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) {
   const { data: session } = useSession()
   const router = useRouter()
   const [trends, setTrends] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [months, setMonths] = useState(6)
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [activeCategory, setActiveCategory] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
@@ -24,9 +275,10 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
   useEffect(() => {
     async function fetchTrends() {
       setLoading(true)
+      // Always fetch all data (120 months / 10 years) so local filtering works beautifully
       const url = accessCode 
-        ? `/api/metrics/trends?months=${months}&accessCode=${accessCode}`
-        : `/api/metrics/trends?months=${months}`
+        ? `/api/metrics/trends?months=120&accessCode=${accessCode}`
+        : `/api/metrics/trends?months=120`
       const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
@@ -35,24 +287,18 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       setLoading(false)
     }
     fetchTrends()
-  }, [months, accessCode])
+  }, [accessCode])
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-  }
-
-  // Deduplicate categories for the selector
   const categories = ["All", ...Array.from(new Set(trends.map(t => t.category)))]
 
-  // Filter trends based on category, search query, and presence of data
   const filteredTrends = trends.filter(t => {
     if (t.history.length === 0) return false;
-    
     const matchesCategory = activeCategory === "All" || t.category === activeCategory
     const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
+  // PDF Generation functions remain exactly as before
   const captureCardCanvas = async (cardEl: HTMLElement): Promise<HTMLCanvasElement | null> => {
     const wrapper = document.createElement('div')
     wrapper.style.position = 'fixed'
@@ -169,7 +415,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       const pageWidth = doc.internal.pageSize.getWidth()
       const pageHeight = doc.internal.pageSize.getHeight()
 
-      // Header Banner
       doc.setFillColor(13, 148, 136)
       doc.rect(0, 0, pageWidth, 24, 'F')
       doc.setFont("helvetica", "bold")
@@ -181,7 +426,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       doc.setFont("helvetica", "normal")
       doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth - 14, 15, { align: "right" })
 
-      // AI Clinical Summary Box
       doc.setFontSize(12)
       doc.setFont("helvetica", "bold")
       doc.setTextColor(15, 23, 42)
@@ -207,7 +451,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       doc.text("Tracked Biomarker Trends", 14, currentY)
       currentY += 6
 
-      // Capture individual chart cards cleanly with live DOM appended container
       for (let i = 0; i < filteredTrends.length; i++) {
         const trend = filteredTrends[i]
         const cardEl = document.getElementById(`card-${trend.code}`)
@@ -240,7 +483,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
         }
       }
 
-      // Footer with page numbering
       const totalPages = doc.getNumberOfPages()
       for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p)
@@ -270,17 +512,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
           <p className="text-muted-foreground">Visualize your biomarker changes over time.</p>
         </div>
         <div className="flex items-center gap-2">
-          <select 
-            value={months} 
-            onChange={(e) => setMonths(Number(e.target.value))}
-            className="flex h-10 w-[180px] rounded-md border border-input bg-background/50 backdrop-blur-sm px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shadow-sm"
-            disabled={generatingPdf}
-          >
-            <option value={3}>Last 3 Months</option>
-            <option value={6}>Last 6 Months</option>
-            <option value={12}>Last 12 Months</option>
-          </select>
-          
           {session?.user?.paymentStatus === "ACTIVE" ? (
             <Button 
               onClick={generatePDF} 
@@ -302,7 +533,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
         </div>
       </div>
 
-      {/* Interactive Search Bar & Glassmorphism Category Selector */}
       <div className="flex flex-col space-y-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -344,165 +574,18 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
       ) : (
         <div id="charts-container" className="grid gap-6 p-2 md:grid-cols-2">
           {filteredTrends.map((trend) => (
-            <Card id={`card-${trend.code}`} key={trend.code} className="overflow-hidden bg-background/60 backdrop-blur-xl border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent pb-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg text-primary">{trend.name}</CardTitle>
-                    <CardDescription className="font-medium mt-1">
-                      {trend.category}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {trend.refMin !== null && trend.refMax !== null && (
-                      <div className="text-right">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Reference Range</span>
-                        <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                          {trend.refMin} - {trend.refMax} {trend.unit}
-                        </span>
-                      </div>
-                    )}
-                    {trend.history.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          if (session?.user?.paymentStatus === "ACTIVE") {
-                            downloadSingleGraph(trend.code, trend.name)
-                          } else {
-                            router.push("/patient/qurix-plus")
-                          }
-                        }}
-                        title={session?.user?.paymentStatus === "ACTIVE" ? `Download ${trend.name} Graph` : "Unlock QURIX Plus to Download"}
-                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                      >
-                        {session?.user?.paymentStatus === "ACTIVE" ? <Download className="h-4 w-4" /> : <Lock className="h-4 w-4 text-indigo-500" />}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="p-0">
-                {trend.history.length > 0 ? (
-                  <div className="h-[280px] w-full p-4 relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={trend.history}
-                        margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                        <XAxis 
-                          dataKey="id" 
-                          tickFormatter={(id) => {
-                            const point = trend.history.find((d: any) => d.id === id)
-                            return point ? formatDate(point.date) : ''
-                          }}
-                          tick={{ fontSize: 12, fill: '#6b7280' }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <YAxis 
-                          domain={[
-                            (dataMin: number) => {
-                              const minVal = isNaN(dataMin) || dataMin === Infinity || dataMin === -Infinity ? 0 : dataMin;
-                              let minBound = minVal;
-                              if (trend.refMin !== null && trend.refMin !== undefined) {
-                                minBound = Math.min(minVal, trend.refMin);
-                              }
-                              if (minBound >= 0 && minBound <= 30) {
-                                return 0;
-                              }
-                              return Math.max(0, Math.floor(minBound * 0.85));
-                            },
-                            (dataMax: number) => {
-                              const maxVal = isNaN(dataMax) || dataMax === Infinity || dataMax === -Infinity ? 10 : dataMax;
-                              let maxBound = maxVal;
-                              if (trend.refMax !== null && trend.refMax !== undefined) {
-                                maxBound = Math.max(maxVal, trend.refMax);
-                              }
-                              return Math.ceil(Math.max(maxBound * 1.15, maxBound + 2));
-                            }
-                          ]}
-                          tickFormatter={(val: number) => {
-                            if (isNaN(val)) return ''
-                            const num = Number(val)
-                            return Number.isInteger(num) ? num.toString() : num.toFixed(1)
-                          }}
-                          tick={{ fontSize: 12, fill: '#6b7280' }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={50}
-                        />
-                        <Tooltip 
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload
-                              const exactDate = new Date(data.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-                              return (
-                                <div className="bg-background/95 backdrop-blur-md p-3 border border-border/50 rounded-xl shadow-xl text-sm">
-                                  <p className="font-bold text-foreground">{exactDate}</p>
-                                  <p className="text-muted-foreground text-xs mb-1">{data.labName || "Lab Report"}</p>
-                                  <p className="text-primary font-bold text-lg">{`${data.value} ${trend.unit}`}</p>
-                                </div>
-                              )
-                            }
-                            return null
-                          }}
-                        />
-                        {trend.refMin !== null && trend.refMax !== null && (
-                          <ReferenceArea 
-                            y1={trend.refMin} 
-                            y2={trend.refMax} 
-                            fill="#10b981" 
-                            fillOpacity={0.08} 
-                          />
-                        )}
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#0d9488" 
-                          strokeWidth={3}
-                          activeDot={{ r: 7, fill: "#0d9488", stroke: "white", strokeWidth: 2 }}
-                          dot={{ r: 4, fill: "#0d9488", strokeWidth: 0 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  // BEAUTIFUL EMPTY STATE WITH FADED CHART GRID
-                  <div className="empty-state-chart h-[280px] w-full p-4 relative flex items-center justify-center">
-                    {/* Faded Background Chart */}
-                    <div className="absolute inset-0 p-4 opacity-20 pointer-events-none grayscale">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={[{ id: 1, value: trend.refMax || 100 }, { id: 2, value: trend.refMin || 0 }]} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                          <XAxis dataKey="id" tick={false} axisLine={false} tickLine={false} />
-                          <YAxis domain={['auto', 'auto']} tickFormatter={(val: number) => `${Math.round(Number(val))}`} allowDecimals={false} tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={50} />
-                          <Line type="monotone" dataKey="value" stroke="#9ca3af" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    
-                    {/* Glassmorphism Overlay */}
-                    <div className="z-10 flex flex-col items-center justify-center p-6 text-center bg-background/60 backdrop-blur-sm rounded-xl border border-white/20 shadow-sm max-w-[80%]">
-                      <div className="h-12 w-12 rounded-full bg-muted/80 flex items-center justify-center mb-3 shadow-inner">
-                        <FileX className="h-6 w-6 text-muted-foreground/70" />
-                      </div>
-                      <h3 className="font-semibold text-foreground/90 mb-1 text-sm">No historical data</h3>
-                      <p className="text-xs text-muted-foreground max-w-[200px] mb-4">
-                        Upload your next report to track {trend.name}.
-                      </p>
-                      <Link href="/patient/upload">
-                        <Button variant="outline" size="sm" className="h-8 text-xs rounded-full shadow-sm hover:shadow-md transition-all bg-background/50">
-                          Upload Report
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <TrendChartCard 
+              key={trend.code} 
+              trend={trend} 
+              session={session} 
+              onDownload={() => {
+                if (session?.user?.paymentStatus === "ACTIVE") {
+                  downloadSingleGraph(trend.code, trend.name)
+                } else {
+                  router.push("/patient/qurix-plus")
+                }
+              }} 
+            />
           ))}
         </div>
       )}

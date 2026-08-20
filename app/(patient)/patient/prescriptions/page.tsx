@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Pill, UploadCloud, FileText, Loader2, Thermometer, Activity, Eye, Trash2, CheckCircle2, Stethoscope, HeartPulse } from "lucide-react"
+import { Pill, UploadCloud, FileText, Loader2, Thermometer, Activity, Eye, Trash2, CheckCircle2, Stethoscope, HeartPulse, BellPlus } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function PrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<any[]>([])
@@ -11,6 +15,12 @@ export default function PrescriptionsPage() {
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedPrescription, setSelectedPrescription] = useState<any | null>(null)
+  
+  const { toast } = useToast()
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false)
+  const [reminderMedicine, setReminderMedicine] = useState("")
+  const [reminderTime, setReminderTime] = useState("08:00")
+  const [savingReminder, setSavingReminder] = useState(false)
 
   useEffect(() => {
     fetchPrescriptions()
@@ -77,6 +87,33 @@ export default function PrescriptionsPage() {
       }
     } catch (e) {
       console.error(e)
+    }
+  }
+
+  async function handleAddReminder(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingReminder(true)
+    try {
+      const res = await fetch("/api/reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prescriptionId: selectedPrescription?.id,
+          medicineName: reminderMedicine,
+          reminderTime: reminderTime
+        })
+      })
+      
+      if (res.ok) {
+        toast({ title: "Reminder Scheduled!", description: `Email reminder set for ${reminderMedicine} at ${reminderTime}` })
+        setIsReminderModalOpen(false)
+      } else {
+        toast({ title: "Error", description: "Failed to set reminder.", variant: "destructive" })
+      }
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to set reminder.", variant: "destructive" })
+    } finally {
+      setSavingReminder(false)
     }
   }
 
@@ -248,6 +285,17 @@ export default function PrescriptionsPage() {
                               {m.frequency}
                             </span>
                           )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="mt-2 text-xs h-7 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                            onClick={() => {
+                              setReminderMedicine(m.name)
+                              setIsReminderModalOpen(true)
+                            }}
+                          >
+                            <BellPlus className="h-3 w-3 mr-1" /> Add Reminder
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -320,6 +368,43 @@ export default function PrescriptionsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isReminderModalOpen} onOpenChange={setIsReminderModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleAddReminder}>
+            <DialogHeader>
+              <DialogTitle>Set Medicine Reminder</DialogTitle>
+              <DialogDescription>
+                Schedule an email reminder for {reminderMedicine}. We will send you an email at this time.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="time" className="text-right">
+                  Time
+                </Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsReminderModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={savingReminder} className="bg-emerald-600 hover:bg-emerald-700">
+                {savingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellPlus className="mr-2 h-4 w-4" />}
+                Save Reminder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

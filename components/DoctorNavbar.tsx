@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, LogOut, Menu, X, KeyRound, ChevronRight, Stethoscope } from "lucide-react"
@@ -45,12 +46,12 @@ export function DoctorNavbar() {
         {/* Desktop Controls */}
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
-          <Link
-            href="/api/auth/signout"
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
             className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center border-l border-border pl-3"
           >
             <LogOut className="h-4 w-4 mr-2" /> Sign out
-          </Link>
+          </button>
         </div>
 
         {/* Mobile Right Controls & Sleek Theme-Blended Toggle */}
@@ -133,13 +134,15 @@ export function DoctorNavbar() {
 
           {/* Sign Out Button */}
           <div className="pt-6 border-t border-border/60 mt-6">
-            <Link
-              href="/api/auth/signout"
-              onClick={() => setIsMobileMenuOpen(false)}
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                signOut({ callbackUrl: '/login' });
+              }}
               className="flex w-full items-center justify-center p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold hover:bg-destructive/20 transition-all text-base shadow-sm"
             >
               <LogOut className="mr-2 h-5 w-5" /> Sign out
-            </Link>
+            </button>
           </div>
         </div>
       )}

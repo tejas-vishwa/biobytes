@@ -151,7 +151,7 @@ export default function ScanAnalysisPage() {
       await fetchScans()
     } catch (err: any) {
       console.error("Scan analysis error:", err)
-      setError(err.message || "An error occurred while communicating with the AI microservice.")
+      setError(err.message || "An error occurred while communicating with the Advance Medical Scan microservice.")
     } finally {
       setAnalyzing(false)
     }
@@ -203,9 +203,9 @@ export default function ScanAnalysisPage() {
           <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white mb-6 shadow-lg shadow-indigo-500/30">
             <Lock className="h-10 w-10" />
           </div>
-          <h3 className="text-2xl md:text-3xl font-extrabold text-foreground mb-4">Scan AI is a QURIX Plus Feature</h3>
-          <p className="text-base text-muted-foreground mb-8 max-w-lg mx-auto leading-relaxed">
-            Unlock the power of 3D Medical Scans and Advanced AI Analysis (X-Rays, CT Scans, MRIs). Upgrade to QURIX Plus for just ₹29/month to get complete diagnostic visibility.
+          <h3 className="text-2xl md:text-3xl font-extrabold text-foreground mb-4">Advance Medical Scan is a QURIX Plus Feature</h3>
+          <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
+            Unlock the power of 3D Medical Scans and Advance Medical Scan Analysis (X-Rays, CT Scans, MRIs). Upgrade to QURIX Plus for just ₹129/month to get complete diagnostic visibility.
           </p>
           <Link href="/patient/qurix-plus">
             <Button size="lg" className="h-14 px-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-lg shadow-xl shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95">
@@ -219,14 +219,13 @@ export default function ScanAnalysisPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 mt-4 md:mt-8 px-3 sm:px-6 pb-16 animate-in fade-in duration-300">
-      {/* Responsive Header Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2.5">
-            <Activity className="h-7 w-7 sm:h-8 sm:w-8 text-primary flex-shrink-0" /> AI Diagnostic Scan Analysis
+            <Activity className="h-7 w-7 sm:h-8 sm:w-8 text-primary flex-shrink-0" /> Advance Medical Scan Diagnostic Scan Analysis
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Deep Learning AI inference for Chest X-Rays, CT Scans, and MRIs powered by <strong>TorchXRayVision</strong> and <strong>MONAI</strong>.
+            Deep Learning Advance Medical Scan inference for Chest X-Rays, CT Scans, and MRIs powered by <strong>TorchXRayVision</strong> and <strong>MONAI</strong>.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20 self-start md:self-auto">
@@ -235,9 +234,7 @@ export default function ScanAnalysisPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Upload Box & Saved Scans List (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Upload Card */}
           <Card className="shadow-md border-border/80">
             <CardHeader className="pb-3">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -250,7 +247,6 @@ export default function ScanAnalysisPage() {
 
             <CardContent className="space-y-4">
               <form onSubmit={handleAnalyze} className="space-y-4">
-                {/* Drag and Drop Zone */}
                 {!selectedFile ? (
                   <div className="border-2 border-dashed rounded-2xl p-6 text-center hover:bg-muted/40 transition-all border-primary/30 bg-card cursor-pointer">
                     <input
@@ -270,7 +266,6 @@ export default function ScanAnalysisPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Live Image Preview */}
                     {imagePreviewUrl ? (
                       <div className="relative rounded-2xl overflow-hidden border border-border/80 bg-black/50 group max-h-56 flex items-center justify-center p-2">
                         <img
@@ -333,11 +328,11 @@ export default function ScanAnalysisPage() {
                 >
                   {analyzing ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running AI Inference...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Advance Medical Scan Inference...
                     </>
                   ) : (
                     <>
-                      <Zap className="mr-2 h-4 w-4" /> Run AI Diagnostic Analysis
+                      <Zap className="mr-2 h-4 w-4" /> Run Advance Medical Scan Diagnostic Analysis
                     </>
                   )}
                 </Button>
@@ -345,7 +340,6 @@ export default function ScanAnalysisPage() {
             </CardContent>
           </Card>
 
-          {/* Saved Scans Records Card */}
           <Card className="shadow-md border-border/80">
             <CardHeader className="pb-3 border-b">
               <div className="flex items-center justify-between">
@@ -379,7 +373,6 @@ export default function ScanAnalysisPage() {
                       }`}
                     >
                       <div className="flex items-center space-x-3 overflow-hidden">
-                        {/* Thumbnail image if available */}
                         {s.fileData ? (
                           <div className="h-10 w-10 rounded-lg overflow-hidden border bg-black/40 flex-shrink-0 flex items-center justify-center">
                             <img src={s.fileData} alt={s.fileName} className="h-full w-full object-cover" />
@@ -421,17 +414,16 @@ export default function ScanAnalysisPage() {
           </Card>
         </div>
 
-        {/* Right Column: AI Analysis Results & Image Display (8 cols) */}
         <Card className="lg:col-span-8 shadow-md border-border/80 flex flex-col justify-between">
           <div>
             <CardHeader className="border-b pb-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                   <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                    <Stethoscope className="h-5 w-5 text-primary" /> Diagnostic AI Scan Dashboard
+                    <Stethoscope className="h-5 w-5 text-primary" /> Diagnostic Advance Medical Scan Dashboard
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    {results ? results.fileName : "Select or upload a scan to view full AI diagnostics"}
+                    {results ? results.fileName : "Select or upload a scan to view full Advance Medical Scan diagnostics"}
                   </CardDescription>
                 </div>
                 {results && (
@@ -477,14 +469,13 @@ export default function ScanAnalysisPage() {
                     }} />
                   ) : (
                     <>
-                      {/* Metadata Header Cards */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-card border border-border/80">
                         <div>
                           <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Modality</span>
                           <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modality}</p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">AI Engine</span>
+                          <span className="text-[10px] text-muted-foreground font-extrabold uppercase tracking-wider">Advance Medical Scan Engine</span>
                           <p className="font-bold text-xs sm:text-sm text-foreground truncate">{results.modelUsed}</p>
                         </div>
                         <div>
@@ -497,7 +488,6 @@ export default function ScanAnalysisPage() {
                         </div>
                       </div>
 
-                      {/* Interactive Scan Viewer Canvas */}
                       {imagePreviewUrl && (
                         <InteractiveScanViewer 
                           imageUrl={imagePreviewUrl} 
@@ -510,15 +500,13 @@ export default function ScanAnalysisPage() {
                         />
                       )}
 
-                      {/* AI Summary Banner */}
                       <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-foreground">
                         <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                          <Zap className="h-3.5 w-3.5" /> Clinical AI Finding Summary
+                          <Zap className="h-3.5 w-3.5" /> Clinical Advance Medical Scan Finding Summary
                         </p>
                         <p className="text-xs sm:text-sm font-semibold mt-1">{results.summary}</p>
                       </div>
 
-                      {/* Comprehensive Clinical Report */}
                       {results.detailedReport && (
                         <div className="p-5 rounded-2xl border bg-card text-foreground shadow-sm">
                           <h3 className="text-sm font-bold border-b pb-2 mb-3 flex items-center gap-2">
@@ -581,7 +569,7 @@ export default function ScanAnalysisPage() {
 
           <CardFooter className="border-t pt-4 text-xs text-muted-foreground flex justify-between items-center">
             <div className="flex items-center gap-1 font-semibold text-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> BioBytes AI Clinical Suite
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> BioBytes Advance Medical Scan Clinical Suite
             </div>
             {results && results.fileUrl && (
               <a

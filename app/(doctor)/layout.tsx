@@ -1,5 +1,6 @@
 import { BackButton } from "@/components/BackButton"
 import { DoctorNavbar } from "@/components/DoctorNavbar"
+import { Footer } from "@/components/Footer"
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         <BackButton />
         {children}
       </main>
+      <Footer />
     </div>
   )
 }

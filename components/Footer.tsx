@@ -14,7 +14,7 @@ export function Footer() {
               <span className="font-bold text-xl tracking-tight text-white">QURIX BioBytes</span>
             </Link>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Intelligent health tracking, 100-biomarker OCR report parsing, instant doctor access sharing, and live hospital queue management.
+              Empowering your healthcare journey with intelligent biomarker tracking, instant medical sharing, and live queue management—all unified within your digital Health Passport.
             </p>
             <div className="flex items-center space-x-2 text-xs text-emerald-400 font-medium">
               <ShieldCheck className="h-4 w-4" />

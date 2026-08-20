@@ -9,18 +9,25 @@ export const dynamic = "force-dynamic"
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null)
   const [activities, setActivities] = useState<any[]>([])
+  const [pendingLabs, setPendingLabs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [approvingLab, setApprovingLab] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, actRes] = await Promise.all([
+        const [statsRes, actRes, labsRes] = await Promise.all([
           fetch("/api/admin/stats"),
-          fetch("/api/admin/activity")
+          fetch("/api/admin/activity"),
+          fetch("/api/admin/labs")
         ])
         
         if (statsRes.ok) setStats(await statsRes.json())
         if (actRes.ok) setActivities(await actRes.json())
+        if (labsRes.ok) {
+          const labsData = await labsRes.json()
+          setPendingLabs(labsData.pendingLabs || [])
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -29,6 +36,23 @@ export default function AdminDashboardPage() {
     }
     fetchData()
   }, [])
+
+  const handleApproveLab = async (labId: string) => {
+    setApprovingLab(labId)
+    try {
+      const res = await fetch(`/api/admin/labs/${labId}/approve`, { method: "PUT" })
+      if (res.ok) {
+        setPendingLabs(prev => prev.filter(lab => lab.id !== labId))
+        // Optionally show a toast here
+      } else {
+        console.error("Failed to approve lab")
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setApprovingLab(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -139,6 +163,66 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="px-6 py-4 text-slate-700">
                           {act.details}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pending Lab Approvals Section */}
+        <Card className="bg-white shadow-sm border-slate-200 col-span-1 lg:col-span-2 mt-8">
+          <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg">Pending Lab Approvals</CardTitle>
+            </div>
+            <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+              {pendingLabs.length} Pending
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {pendingLabs.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">No pending lab applications.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-slate-500 bg-slate-50">
+                    <tr>
+                      <th className="px-6 py-3 font-medium">Lab Details</th>
+                      <th className="px-6 py-3 font-medium">Contact</th>
+                      <th className="px-6 py-3 font-medium">Scope & Reg No</th>
+                      <th className="px-6 py-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pendingLabs.map((lab) => (
+                      <tr key={lab.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-slate-900">{lab.name}</p>
+                          <p className="text-xs text-slate-500">Est. {lab.yearEstablished}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-slate-700">{lab.contactPerson}</p>
+                          <p className="text-xs text-slate-500">{lab.email}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-xs text-slate-600 capitalize truncate max-w-[200px]" title={lab.operationalScope}>
+                            {lab.operationalScope}
+                          </p>
+                          <p className="text-xs font-mono text-slate-400 mt-1">{lab.registrationNo}</p>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleApproveLab(lab.id)}
+                            disabled={approvingLab === lab.id}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-xs font-medium disabled:opacity-50 transition-colors"
+                          >
+                            {approvingLab === lab.id ? "Approving..." : "Approve"}
+                          </button>
                         </td>
                       </tr>
                     ))}

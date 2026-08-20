@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<"login" | "demo">("login")
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,78 +121,98 @@ export default function LoginPage() {
           </CardHeader>
           <form onSubmit={onSubmit}>
             <CardContent className="space-y-4">
-              {error && <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">{error}</div>}
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none" htmlFor="email">Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none" htmlFor="password">Password</label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
-              </Button>
-
-              <div className="relative flex items-center py-1 w-full">
-                <div className="flex-grow border-t border-muted"></div>
-                <span className="flex-shrink-0 mx-4 text-muted-foreground text-xs uppercase">Quick Demo Login</span>
-                <div className="flex-grow border-t border-muted"></div>
+              {/* Tab Selector */}
+              <div className="flex bg-muted p-1 rounded-lg w-full mb-6">
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab("login")}
+                  className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "login" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Authentication
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab("demo")}
+                  className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "demo" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Demo Users
+                </button>
               </div>
 
-              {/* Patient Demo Accounts */}
-              <div className="w-full space-y-2">
-                <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                  <User className="h-3 w-3" /> Patients (password: demo1234)
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {patients.map((p) => (
+              {activeTab === "login" ? (
+                <>
+                  {error && <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">{error}</div>}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="email">Email</label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none" htmlFor="password">Password</label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-6">
+                  {/* Patient Demo Accounts */}
+                  <div className="w-full space-y-2">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                      <User className="h-3 w-3" /> Patients (password: demo1234)
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {patients.map((p) => (
+                        <Button
+                          key={p.email}
+                          type="button"
+                          variant="outline"
+                          className={`text-xs py-2 h-auto ${colorMap[p.color]}`}
+                          onClick={() => demoLogin(p.email, "demo1234", "/patient/dashboard")}
+                          disabled={loading}
+                        >
+                          {p.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Doctor Demo Account */}
+                  <div className="w-full space-y-2">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                      <Stethoscope className="h-3 w-3" /> Doctor (password: demo1234)
+                    </p>
                     <Button
-                      key={p.email}
                       type="button"
                       variant="outline"
-                      className={`text-xs py-2 h-auto ${colorMap[p.color]}`}
-                      onClick={() => demoLogin(p.email, "demo1234", "/patient/dashboard")}
+                      className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
+                      onClick={() => demoLogin("doctor@demo.com", "demo1234", "/doctor/dashboard")}
                       disabled={loading}
                     >
-                      {p.name}
+                      Dr. Rahul Verma
                     </Button>
-                  ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Doctor Demo Account */}
-              <div className="w-full space-y-2">
-                <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                  <Stethoscope className="h-3 w-3" /> Doctor (password: demo1234)
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
-                  onClick={() => demoLogin("doctor@demo.com", "demo1234", "/doctor/dashboard")}
-                  disabled={loading}
-                >
-                  Dr. Rahul Verma
+              )}
+            </CardContent>
+            
+            {activeTab === "login" && (
+              <CardFooter className="flex flex-col space-y-4">
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign in"}
                 </Button>
-              </div>
-
-            </CardFooter>
+              </CardFooter>
+            )}
           </form>
         </Card>
 

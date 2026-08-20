@@ -12,6 +12,9 @@ model User {
   email         String    @unique
   passwordHash  String
   name          String?
+  gender        String?
+  age           Int?
+  location      String?
   role          String    @default("PATIENT") // PATIENT, DOCTOR, ADMIN, LAB_PARTNER
   accountStatus    String    @default("ACTIVE") // ACTIVE, SUSPENDED
   subscriptionTier String    @default("FREE") // "FREE" or "QURIX_PLUS"
@@ -30,6 +33,7 @@ model User {
   prescriptions       Prescription[] @relation("PatientPrescriptions")
   scans               MedicalScan[]  @relation("PatientScans")
   activities          ActivityLog[]
+  medicineReminders   MedicineReminder[] @relation("PatientReminders")
 }
 
 model DoctorProfile {
@@ -120,15 +124,23 @@ model HealthAlert {
 }
 
 model LabPartner {
-  id            String   @id @default(uuid())
-  name          String
-  logoUrl       String?
-  bookingUrl    String?
-  commissionPct Float    @default(0)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  id               String   @id @default(uuid())
+  name             String
+  yearEstablished  Int?
+  contactPerson    String?
+  email            String?  @unique
+  passwordHash     String?
+  registrationNo   String?
+  certificationUrl String?
+  operationalScope String?
+  logoUrl          String?
+  bookingUrl       String?
+  commissionPct    Float    @default(0)
+  accountStatus    String   @default("pending") // pending, active, rejected
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
 
-  bookings      LabBooking[]
+  bookings         LabBooking[]
 }
 
 model LabBooking {
@@ -197,6 +209,20 @@ model Prescription {
   symptomsJson  String?  // Extracted JSON array or text of symptoms/diagnosis
   vitalsJson    String?  // Extracted JSON object: { temperature?: string, bp?: string, pulse?: string, weight?: string }
   createdAt     DateTime @default(now())
+
+  reminders     MedicineReminder[] @relation("PrescriptionReminders")
+}
+
+model MedicineReminder {
+  id              String       @id @default(uuid())
+  patientId       String
+  patient         User         @relation("PatientReminders", fields: [patientId], references: [id], onDelete: Cascade)
+  prescriptionId  String?
+  prescription    Prescription? @relation("PrescriptionReminders", fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medicineName    String
+  reminderTime    String       // Format "HH:mm" (e.g. "08:00")
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
 }
 
 model MedicalScan {

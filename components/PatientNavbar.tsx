@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, LineChart, LogOut, UploadCloud, Calendar, Menu, X, ChevronRight, User, Pill, Activity } from "lucide-react"
@@ -21,9 +22,10 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
     { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard, desc: "Health overview & metrics" },
     { name: "Upload", href: "/patient/upload", icon: UploadCloud, desc: "Unified Hub: Reports, Prescriptions & Scans" },
     { name: "Prescriptions", href: "/patient/prescriptions", icon: Pill, desc: "Medicines & OCR symptoms" },
-    { name: "Scan AI", href: "/patient/scan-analysis", icon: Activity, desc: "X-Ray & CT/MRI AI analysis" },
+    { name: "Advance Medical Scan", href: "/patient/scan-analysis", icon: Activity, desc: "X-Ray & CT/MRI Advance Medical Scan analysis" },
     { name: "Trends", href: "/patient/trends", icon: LineChart, desc: "100-test longitudinal charts" },
     { name: "Appointments", href: "/patient/appointments", icon: Calendar, desc: "Doctor bookings & queues" },
+    { name: "Profile", href: "/patient/profile", icon: User, desc: "Manage personal information" },
   ]
 
   return (
@@ -75,12 +77,12 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
               )}
             </div>
           )}
-          <Link
-            href="/api/auth/signout"
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
             className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center border-l border-border pl-3"
           >
             <LogOut className="h-4 w-4 mr-2" /> Sign out
-          </Link>
+          </button>
         </div>
 
         {/* Mobile Right Controls & Sleek Theme-Blended Toggle */}
@@ -175,13 +177,15 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
 
           {/* Sign Out Button */}
           <div className="pt-6 border-t border-border/60 mt-6">
-            <Link
-              href="/api/auth/signout"
-              onClick={() => setIsMobileMenuOpen(false)}
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                signOut({ callbackUrl: '/login' });
+              }}
               className="flex w-full items-center justify-center p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold hover:bg-destructive/20 transition-all text-base shadow-sm"
             >
               <LogOut className="mr-2 h-5 w-5" /> Sign out
-            </Link>
+            </button>
           </div>
         </div>
       )}
