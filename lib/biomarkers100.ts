@@ -12,7 +12,7 @@ export const BIOMARKERS_100: BiomarkerDef[] = [
   { name: 'Hemoglobin', code: 'HEMOGLOBIN', category: 'CBC', unit: 'g/dL', refMin: 12.0, refMax: 15.5 },
   { name: 'RBC Count', code: 'RBC', category: 'CBC', unit: 'mill/µL', refMin: 4.1, refMax: 5.1 },
   { name: 'WBC Count', code: 'WBC', category: 'CBC', unit: 'thou/µL', refMin: 4.5, refMax: 11.0 },
-  { name: 'Platelet Count', code: 'PLATELETS', category: 'CBC', unit: 'lakh/cubic mm', refMin: 150, refMax: 450 },
+  { name: 'Platelet Count', code: 'PLATELETS', category: 'CBC', unit: 'lakh/cubic mm', refMin: 1.50, refMax: 4.50 },
   { name: 'Hematocrit (PCV)', code: 'HEMATOCRIT', category: 'CBC', unit: '%', refMin: 36, refMax: 46 },
   { name: 'MCV', code: 'MCV', category: 'CBC', unit: 'fL', refMin: 80, refMax: 100 },
   { name: 'MCH', code: 'MCH', category: 'CBC', unit: 'pg', refMin: 27, refMax: 33 },
