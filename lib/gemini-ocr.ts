@@ -174,13 +174,21 @@ async function fallbackPrescriptionExtraction(
 
   const sanitizedMeds = sanitizeMedications(rawMedications)
 
+  let testDate: string | null = null
+  const dateMatch = extractedText.match(/(?:date|date of prescription|prescribed on|date of visit)\s*[:\-\=]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/i)
+  if (dateMatch && dateMatch[1]) {
+    testDate = dateMatch[1].trim()
+  }
+
+  const labName: string | null = null
+
   return {
     documentType: "prescription",
     patient: { name: patientName, age: null, gender: null },
     doctor: { name: doctorName, date: testDate || new Date().toISOString().split("T")[0] },
     medications: sanitizedMeds,
     biomarkers: null,
-    labName: null,
+    labName,
     testDate
   }
 }
