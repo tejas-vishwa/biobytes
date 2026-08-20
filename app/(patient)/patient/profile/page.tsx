@@ -52,8 +52,8 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleGenderChange = (value: string) => {
-    setFormData(prev => ({ ...prev, gender: value }))
+  const handleGenderChange = (value: string | null) => {
+    if (value) setFormData(prev => ({ ...prev, gender: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

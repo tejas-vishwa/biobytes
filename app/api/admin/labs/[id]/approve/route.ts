@@ -4,10 +4,10 @@ import nodemailer from "nodemailer"
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const labId = params.id
+    const { id: labId } = await params
 
     // Update the lab's status
     const updatedLab = await prisma.labPartner.update({
