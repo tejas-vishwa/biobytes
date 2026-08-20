@@ -1,5 +1,4 @@
 import React from "react"
-import { renderToStaticMarkup } from "react-dom/server"
 import { QurixPlusTemplate, QurixPlusReportData } from "@/components/pdf/QurixPlusTemplate"
 
 /**
@@ -10,7 +9,10 @@ import { QurixPlusTemplate, QurixPlusReportData } from "@/components/pdf/QurixPl
  * @param userData - The populated dynamic data (profile, history, trends)
  * @returns The final HTML string ready for PDF export
  */
-export function generateUserReport(userId: string, userData: QurixPlusReportData): string {
+export async function generateUserReport(userId: string, userData: QurixPlusReportData): Promise<string> {
+  // Dynamically import to bypass Next.js 14+ static analysis restrictions on react-dom/server in App Router
+  const { renderToStaticMarkup } = await import("react-dom/server")
+  
   // We use React's renderToStaticMarkup to convert the JSX template into a raw HTML string.
   // This approach is much cleaner and scalable than string concatenation or old templating languages.
   const htmlContent = renderToStaticMarkup(

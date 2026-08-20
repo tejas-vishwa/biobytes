@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const userId = data.patientProfile.uhiId || "UNKNOWN_USER"
 
     // Generate the raw HTML string for the PDF export using React Templating
-    const htmlReport = generateUserReport(userId, data)
+    const htmlReport = await generateUserReport(userId, data)
 
     // Option A: Return the HTML directly for the browser to render and print.
     // Option B (if using Puppeteer backend): We would pipe this htmlReport string into page.setContent(htmlReport)
