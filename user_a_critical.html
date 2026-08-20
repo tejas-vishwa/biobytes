@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charSet="UTF-8"/><title></title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/><style>
+:root {
+  --primary-dark: #0f172a;
+  --bg-light: #f8fafc;
+  --surface: #ffffff;
+  --text-main: #334155;
+  --text-muted: #64748b;
+  
+  /* Triage Colors */
+  --critical-bg: #fef2f2;
+  --critical-border: #dc2626;
+  --critical-text: #991b1b;
+  
+  --wellness-bg: #f0fdf4;
+  --wellness-border: #16a34a;
+  --wellness-text: #166534;
+
+  --warning: #F59E0B;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', 'Plus Jakarta Sans', sans-serif; background-color: white; color: var(--text-main); -webkit-font-smoothing: antialiased; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+@page { size: A4; margin: 0mm; }
+.a4-page { width: 100%; min-height: 297mm; background: var(--bg-light); position: relative; display: flex; flex-direction: column; page-break-after: always; }
+.no-break { page-break-inside: avoid; }
+
+/* HEADER */
+.header { padding: 12mm 15mm 8mm; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #e2e8f0; background: var(--surface); }
+.brand { display: flex; flex-direction: column; }
+.brand-title { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; color: var(--primary-dark); }
+.brand-subtitle { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin-top: 4px; }
+.demographics { text-align: right; }
+.patient-name { font-size: 20px; font-weight: 800; color: var(--primary-dark); }
+.patient-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+.content { padding: 12mm 15mm; flex: 1; }
+
+/* LAYOUT SHIFTING ENGINES */
+.triage-block { padding: 20px; border-radius: 12px; border-left: 6px solid; margin-bottom: 10mm; }
+.triage-block.critical { background: var(--critical-bg); border-color: var(--critical-border); }
+.triage-block.wellness { background: var(--wellness-bg); border-color: var(--wellness-border); }
+
+.triage-title { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.critical .triage-title { color: var(--critical-text); }
+.wellness .triage-title { color: var(--wellness-text); }
+
+.triage-summary { font-size: 14px; line-height: 1.6; }
+.critical .triage-summary { color: #7f1d1d; }
+.wellness .triage-summary { color: #14532d; }
+
+/* PROCEDURAL SECTIONS */
+.section-title { font-size: 16px; font-weight: 800; color: var(--primary-dark); border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px; margin-top: 5mm; }
+
+.conditions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 10mm; }
+.condition-card { background: var(--surface); border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+.cond-name { font-size: 13px; font-weight: 700; color: var(--primary-dark); }
+.cond-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.cond-status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-top: 6px; }
+.cond-status.Active { background: #fee2e2; color: #dc2626; }
+.cond-status.Managed { background: #fef9c3; color: #ca8a04; }
+.cond-status.Resolved { background: #d1fae5; color: #16a34a; }
+
+/* BIOMARKER LIST */
+.biomarker-list { display: flex; flex-direction: column; gap: 10px; }
+.biomarker-row { display: flex; align-items: center; background: var(--surface); border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; page-break-inside: avoid; }
+.bm-info { width: 180px; flex-shrink: 0; }
+.bm-name { font-size: 14px; font-weight: 800; color: var(--primary-dark); }
+.bm-ref { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.bm-value-box { width: 120px; text-align: right; padding-right: 20px; }
+.bm-val { font-size: 20px; font-weight: 900; }
+.bm-unit { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-left: 4px; }
+.val-High, .val-Critical { color: var(--critical-border); }
+.val-Low { color: var(--warning); }
+.val-Optimal { color: var(--wellness-border); }
+
+/* SPARKLINE */
+.sparkline-container { flex: 1; height: 40px; display: flex; align-items: flex-end; position: relative; padding-bottom: 5px; }
+.sparkline-label { position: absolute; font-size: 9px; color: #94a3b8; bottom: -10px; }
+.sparkline-label.start { left: 0; }
+.sparkline-label.end { right: 0; }
+.sparkline-line { stroke: var(--primary-dark); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.sparkline-point { fill: var(--primary-dark); }
+.sparkline-point.alert { fill: var(--critical-border); r: 3; }
+.sparkline-grid { stroke: #f1f5f9; stroke-width: 1; stroke-dasharray: 2 2; }
+
+/* FOOTER */
+.footer { background: var(--primary-dark); color: white; padding: 6mm 15mm; font-size: 10px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+</style></head><body><div class="a4-page"><div class="header no-break"><div class="brand"><div class="brand-title">QURIX BESPOKE</div><div class="brand-subtitle">Algorithmic Health Intelligence</div></div><div class="demographics"><div class="patient-name">Arjun Patel</div><div class="patient-meta">ID: UHI-5544-3322 | 58 Yrs | Male | 20/8/2026</div></div></div><div class="content"><div class="triage-block critical"><div class="triage-title"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>CRITICAL CLINICAL ALERT</div><div class="triage-summary">URGENT REVIEW REQUIRED: We have detected 2 critical biomarker anomaly(s) in today&#x27;s reading. Your HbA1c is dangerously elevated at 8.4%. Given your history of Type 2 Diabetes Mellitus (Diagnosed 2015), this poses a severe immediate risk of hyperglycemia complications. Your Systolic Blood Pressure reading of 165 is critically alarming due to your pre-existing Hypertension. Please seek immediate medical consultation with your primary care provider.</div></div><div class="no-break"><div class="section-title">Documented Medical History</div><div class="conditions-grid"><div class="condition-card"><div class="cond-name">Type 2 Diabetes Mellitus</div><div class="cond-meta">Diagnosed: 2015</div><div class="cond-status Active">Active</div></div><div class="condition-card"><div class="cond-name">Hypertension</div><div class="cond-meta">Diagnosed: 2018</div><div class="cond-status Active">Active</div></div></div></div><div class="section-title">Longitudinal Biomarker Analysis</div><div class="biomarker-list"><div class="biomarker-row"><div class="bm-info"><div class="bm-name">HbA1c</div><div class="bm-ref">Range: &lt; 5.7 %</div></div><div class="bm-value-box"><div class="bm-val val-High">8.4<span class="bm-unit">%</span></div></div><div class="flex-1 pl-4"><div class="sparkline-container"><svg width="100%" height="40" viewBox="-5 -5 210 40" preserveAspectRatio="none"><line x1="0" y1="30" x2="200" y2="30" class="sparkline-grid"></line><line x1="0" y1="0" x2="200" y2="0" class="sparkline-grid"></line><polyline points="0,30 100,18.461538461538467 200,0" style="stroke:#dc2626;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round"></polyline><circle cx="0" cy="30" r="2" style="fill:#dc2626"></circle><circle cx="100" cy="18.461538461538467" r="2" style="fill:#dc2626"></circle><circle cx="200" cy="0" r="3" style="fill:#dc2626"></circle></svg><div class="sparkline-label start">2025-10-10</div><div class="sparkline-label end">Today</div></div></div></div><div class="biomarker-row"><div class="bm-info"><div class="bm-name">Systolic Blood Pressure</div><div class="bm-ref">Range: &lt; 120 mmHg</div></div><div class="bm-value-box"><div class="bm-val val-High">165<span class="bm-unit">mmHg</span></div></div><div class="flex-1 pl-4"><div class="sparkline-container"><svg width="100%" height="40" viewBox="-5 -5 210 40" preserveAspectRatio="none"><line x1="0" y1="30" x2="200" y2="30" class="sparkline-grid"></line><line x1="0" y1="0" x2="200" y2="0" class="sparkline-grid"></line><polyline points="0,30 100,12 200,0" style="stroke:#dc2626;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round"></polyline><circle cx="0" cy="30" r="2" style="fill:#dc2626"></circle><circle cx="100" cy="12" r="2" style="fill:#dc2626"></circle><circle cx="200" cy="0" r="3" style="fill:#dc2626"></circle></svg><div class="sparkline-label start">2025-10-10</div><div class="sparkline-label end">Today</div></div></div></div><div class="biomarker-row"><div class="bm-info"><div class="bm-name">Total Cholesterol</div><div class="bm-ref">Range: &lt; 200 mg/dL</div></div><div class="bm-value-box"><div class="bm-val val-High">240<span class="bm-unit">mg/dL</span></div></div><div class="flex-1 pl-4"><div class="sparkline-container"><svg width="100%" height="40" viewBox="-5 -5 210 40" preserveAspectRatio="none"><line x1="0" y1="30" x2="200" y2="30" class="sparkline-grid"></line><line x1="0" y1="0" x2="200" y2="0" class="sparkline-grid"></line><polyline points="0,30 100,18 200,0" style="stroke:#dc2626;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round"></polyline><circle cx="0" cy="30" r="2" style="fill:#dc2626"></circle><circle cx="100" cy="18" r="2" style="fill:#dc2626"></circle><circle cx="200" cy="0" r="3" style="fill:#dc2626"></circle></svg><div class="sparkline-label start">2025-10-10</div><div class="sparkline-label end">Today</div></div></div></div></div></div><div class="footer no-break"><div>CONFIDENTIAL BESPOKE REPORT</div><div>Generated by QURIX Algorithmic Intelligence</div></div></div>
+    <script>
+      window.onload = function() {
+        setTimeout(function() {
+          window.print();
+        }, 500);
+      };
+    </script>
+  </body></html>

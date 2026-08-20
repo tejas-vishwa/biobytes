@@ -1,0 +1,58 @@
+{
+  "patientDemographics": {
+    "name": "Arjun Patel",
+    "uhiId": "UHI-5544-3322",
+    "age": 58,
+    "gender": "Male"
+  },
+  "documentedConditions": [
+    {
+      "condition": "Type 2 Diabetes Mellitus",
+      "diagnosedYear": 2015,
+      "status": "Active"
+    },
+    {
+      "condition": "Hypertension",
+      "diagnosedYear": 2018,
+      "status": "Active"
+    }
+  ],
+  "currentFlags": [
+    {
+      "biomarker": "HbA1c",
+      "currentValue": 8.4,
+      "unit": "%",
+      "referenceRange": "< 5.7",
+      "status": "Critical High",
+      "historicalBaselines": [
+        { "date": "2025-10-10", "value": 7.1 },
+        { "date": "2026-02-15", "value": 7.6 },
+        { "date": "2026-08-20", "value": 8.4 }
+      ]
+    },
+    {
+      "biomarker": "Systolic Blood Pressure",
+      "currentValue": 165,
+      "unit": "mmHg",
+      "referenceRange": "< 120",
+      "status": "Critical High",
+      "historicalBaselines": [
+        { "date": "2025-10-10", "value": 140 },
+        { "date": "2026-02-15", "value": 155 },
+        { "date": "2026-08-20", "value": 165 }
+      ]
+    },
+    {
+      "biomarker": "Total Cholesterol",
+      "currentValue": 240,
+      "unit": "mg/dL",
+      "referenceRange": "< 200",
+      "status": "High",
+      "historicalBaselines": [
+        { "date": "2025-10-10", "value": 190 },
+        { "date": "2026-02-15", "value": 210 },
+        { "date": "2026-08-20", "value": 240 }
+      ]
+    }
+  ]
+}

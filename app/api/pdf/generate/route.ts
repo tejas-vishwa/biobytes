@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server"
 import { generateUserReport } from "@/lib/report-generator"
-import { QurixPlusReportData } from "@/components/pdf/QurixPlusTemplate"
+import { BespokeReportData } from "@/components/pdf/BespokeHealthReportTemplate"
 
 export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
-    const data: QurixPlusReportData = await req.json()
+    const data: BespokeReportData = await req.json()
     
-    if (!data || !data.patientProfile || !data.currentTrends) {
-      return NextResponse.json({ error: "Invalid payload format. Must match QurixPlusReportData schema." }, { status: 400 })
+    if (!data || !data.patientDemographics || !data.currentFlags) {
+      return NextResponse.json({ error: "Invalid payload format. Must match BespokeReportData schema." }, { status: 400 })
     }
 
-    // In a real application, you might extract userId from session or request
-    // and fetch additional database metadata. Here we pass a mock ID or use the UHI
-    const userId = data.patientProfile.uhiId || "UNKNOWN_USER"
+    // Extract userId
+    const userId = data.patientDemographics.uhiId || "UNKNOWN_USER"
 
     // Generate the raw HTML string for the PDF export using React Templating
     const htmlReport = await generateUserReport(userId, data)
