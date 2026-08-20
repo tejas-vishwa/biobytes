@@ -22,7 +22,7 @@ const formatDate = (dateStr: string) => {
 }
 
 // Sub-component for individual chart card to manage its own time filter state
-function TrendChartCard({ trend, session, onDownload }: { trend: any, session: any, onDownload: () => void }) {
+function TrendChartCard({ trend, session }: { trend: any, session: any }) {
   const [timeFilter, setTimeFilter] = useState<number>(6) // Default 6M
 
   // Filter history based on local time filter
@@ -80,17 +80,6 @@ function TrendChartCard({ trend, session, onDownload }: { trend: any, session: a
                     {trend.refMin} - {trend.refMax} {trend.unit}
                   </span>
                 </div>
-              )}
-              {filteredHistory.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onDownload}
-                  title={session?.user?.paymentStatus === "ACTIVE" ? `Download ${trend.name} Graph` : "Unlock QURIX Plus to Download"}
-                  className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                >
-                  {session?.user?.paymentStatus === "ACTIVE" ? <Download className="h-3 w-3" /> : <Lock className="h-3 w-3 text-indigo-500" />}
-                </Button>
               )}
             </div>
           </div>
@@ -297,98 +286,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
   })
 
   // PDF Generation functions remain exactly as before
-  const captureCardCanvas = async (cardEl: HTMLElement): Promise<HTMLCanvasElement | null> => {
-    const wrapper = document.createElement('div')
-    wrapper.style.position = 'fixed'
-    wrapper.style.top = '-9999px'
-    wrapper.style.left = '-9999px'
-    wrapper.style.width = '640px'
-    wrapper.style.height = '360px'
-    wrapper.style.zIndex = '-9999'
-    wrapper.style.background = '#ffffff'
-    wrapper.style.overflow = 'hidden'
-    wrapper.style.borderRadius = '16px'
-
-    const clone = cardEl.cloneNode(true) as HTMLElement
-    clone.style.width = '640px'
-    clone.style.height = '360px'
-    clone.style.background = '#ffffff'
-    clone.style.color = '#0f172a'
-    clone.style.margin = '0'
-    clone.style.padding = '16px'
-    clone.style.boxSizing = 'border-box'
-
-    const downloadBtns = clone.querySelectorAll('button')
-    downloadBtns.forEach(btn => btn.remove())
-
-    const responsiveContainers = clone.querySelectorAll('.recharts-responsive-container')
-    responsiveContainers.forEach((rc: any) => {
-      rc.style.width = '600px'
-      rc.style.height = '260px'
-      rc.style.minWidth = '600px'
-      rc.style.minHeight = '260px'
-    })
-
-    const wrapperContainers = clone.querySelectorAll('.recharts-wrapper')
-    wrapperContainers.forEach((wc: any) => {
-      wc.style.width = '600px'
-      wc.style.height = '260px'
-    })
-
-    const svgs = clone.querySelectorAll('svg')
-    svgs.forEach((svg: any) => {
-      svg.setAttribute('width', '600')
-      svg.setAttribute('height', '260')
-      svg.style.width = '600px'
-      svg.style.height = '260px'
-    })
-
-    wrapper.appendChild(clone)
-    document.body.appendChild(wrapper)
-
-    await new Promise(r => setTimeout(r, 60))
-
-    try {
-      const canvas = await html2canvas(wrapper, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false
-      })
-      if (document.body.contains(wrapper)) {
-        document.body.removeChild(wrapper)
-      }
-      return canvas
-    } catch (err) {
-      if (document.body.contains(wrapper)) {
-        document.body.removeChild(wrapper)
-      }
-      console.error("Card capture error:", err)
-      return null
-    }
-  }
-
-  const downloadSingleGraph = async (code: string, name: string) => {
-    const cardEl = document.getElementById(`card-${code}`)
-    if (!cardEl) return
-    try {
-      const canvas = await captureCardCanvas(cardEl)
-      if (!canvas) throw new Error("Could not render chart canvas")
-      
-      const imgData = canvas.toDataURL('image/png')
-      const link = document.createElement('a')
-      link.download = `QURIX_${name.replace(/[^a-zA-Z0-9]/g, '_')}_Trend.png`
-      link.href = imgData
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    } catch (err: any) {
-      console.error("Graph download failed:", err)
-      alert(`Failed to download graph: ${err?.message || "Error capturing chart"}`)
-    }
-  }
-
   const generatePDF = () => {
     setGeneratingPdf(true)
     try {
@@ -478,13 +375,6 @@ export function PatientTrendsDashboard({ accessCode }: { accessCode?: string }) 
               key={trend.code} 
               trend={trend} 
               session={session} 
-              onDownload={() => {
-                if (session?.user?.paymentStatus === "ACTIVE") {
-                  downloadSingleGraph(trend.code, trend.name)
-                } else {
-                  router.push("/patient/qurix-plus")
-                }
-              }} 
             />
           ))}
         </div>
