@@ -177,9 +177,11 @@ async function fallbackPrescriptionExtraction(
   return {
     documentType: "prescription",
     patient: { name: patientName, age: null, gender: null },
-    doctor: { name: doctorName, date: new Date().toISOString().split("T")[0] },
+    doctor: { name: doctorName, date: testDate || new Date().toISOString().split("T")[0] },
     medications: sanitizedMeds,
-    biomarkers: null
+    biomarkers: null,
+    labName: null,
+    testDate
   }
 }
 
@@ -222,6 +224,23 @@ async function fallbackLabReportExtraction(
     doctorName = `Dr. ${docMatch[1].trim().slice(0, 30)}`
   }
 
+  let testDate: string | null = null
+  const dateMatch = extractedText.match(/(?:date|date of test|collected|registered|reported)\s*[:\-\=]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/i)
+  if (dateMatch && dateMatch[1]) {
+    testDate = dateMatch[1].trim()
+  }
+
+  let labName: string | null = null
+  if (/thyrocare/i.test(extractedText)) labName = "Thyrocare"
+  else if (/lal path/i.test(extractedText)) labName = "Dr. Lal PathLabs"
+  else if (/srl/i.test(extractedText)) labName = "SRL Diagnostics"
+  else if (/metropolis/i.test(extractedText)) labName = "Metropolis Healthcare"
+  else if (/apollo/i.test(extractedText)) labName = "Apollo Diagnostics"
+  else if (/suburban/i.test(extractedText)) labName = "Suburban Diagnostics"
+  else if (/lucid/i.test(extractedText)) labName = "Lucid Medical Diagnostics"
+  else if (/vijaya/i.test(extractedText)) labName = "Vijaya Diagnostic Centre"
+  else if (/max/i.test(extractedText)) labName = "Max Healthcare"
+
   const biomarkers: any[] = []
   BIOMARKERS_100.forEach((b) => {
     const safeName = b.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
@@ -247,8 +266,10 @@ async function fallbackLabReportExtraction(
   return {
     documentType: "lab_report",
     patient: { name: patientName, age: null, gender: null },
-    doctor: { name: doctorName, date: new Date().toISOString().split("T")[0] },
+    doctor: { name: doctorName, date: testDate || new Date().toISOString().split("T")[0] },
     biomarkers: biomarkers.length > 0 ? biomarkers : null,
-    medications: null
+    medications: null,
+    labName,
+    testDate
   }
 }

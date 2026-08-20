@@ -32,4 +32,6 @@ export interface ExtractedMedicalData {
   doctor?: DoctorInfo | null;
   biomarkers?: ExtractedBiomarker[] | null;
   medications?: ExtractedMedication[] | null;
+  labName?: string | null;
+  testDate?: string | null;
 }

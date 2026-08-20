@@ -95,8 +95,8 @@ export async function POST(req: Request) {
         status: "PARSED",
         parsedJson: JSON.stringify(extractedData),
         aiSummary: aiSummary,
-        labName: extractedData.documentType === "lab_report" ? "Extracted Lab Report" : "Medical Document",
-        reportDate: extractedData.doctor?.date ? new Date(extractedData.doctor.date) : new Date(),
+        labName: extractedData.labName || (extractedData.documentType === "lab_report" ? "Extracted Lab Report" : "Medical Document"),
+        reportDate: extractedData.testDate ? new Date(extractedData.testDate) : (extractedData.doctor?.date ? new Date(extractedData.doctor.date) : new Date()),
       },
     })
 
