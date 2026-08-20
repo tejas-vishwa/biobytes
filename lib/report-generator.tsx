@@ -1,5 +1,5 @@
 import React from "react"
-import ReactDOMServer from "react-dom/server"
+import { renderToStaticMarkup } from "react-dom/server"
 import { QurixPlusTemplate, QurixPlusReportData } from "@/components/pdf/QurixPlusTemplate"
 
 /**
@@ -13,7 +13,7 @@ import { QurixPlusTemplate, QurixPlusReportData } from "@/components/pdf/QurixPl
 export function generateUserReport(userId: string, userData: QurixPlusReportData): string {
   // We use React's renderToStaticMarkup to convert the JSX template into a raw HTML string.
   // This approach is much cleaner and scalable than string concatenation or old templating languages.
-  const htmlContent = ReactDOMServer.renderToStaticMarkup(
+  const htmlContent = renderToStaticMarkup(
     <QurixPlusTemplate data={userData} />
   )
 
