@@ -72,7 +72,7 @@ export const BIOMARKERS_100: BiomarkerDef[] = [
   { name: 'TSH', code: 'TSH', category: 'Thyroid', unit: 'uIU/mL', refMin: 0.55, refMax: 4.78 },
 
   // Vitamins & Minerals
-  { name: 'Vitamin D', code: 'VITAMIN_D', category: 'Vitamins & Minerals', unit: 'ng/mL', refMin: 30, refMax: 100 },
+  { name: 'Vitamin D (25-OH)', code: 'VITAMIN_D', category: 'Vitamins & Minerals', unit: 'ng/mL', refMin: 30, refMax: 100 },
   { name: 'Vitamin B12', code: 'VITAMIN_B12', category: 'Vitamins & Minerals', unit: 'pg/mL', refMin: 211, refMax: 911 },
   { name: 'Serum Iron', code: 'IRON', category: 'Vitamins & Minerals', unit: 'ug/dL', refMin: 60, refMax: 170 },
   { name: 'TIBC', code: 'TIBC', category: 'Vitamins & Minerals', unit: 'ug/dL', refMin: 240, refMax: 450 },
