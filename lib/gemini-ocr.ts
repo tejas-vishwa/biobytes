@@ -70,7 +70,10 @@ export function sanitizeMedications(medications: ExtractedMedication[]): Extract
       }
     }
     
-    if (!isValidDrug) continue;
+    // Bypass dictionary strict match if it successfully parsed a strict dosage unit (mg, ml, g, etc)
+    if (!isValidDrug && !(m as any)._has_unit) {
+      continue;
+    }
 
     cleanList.push({
       drug_name: name,
@@ -120,16 +123,26 @@ async function fallbackPrescriptionExtraction(buffer: Buffer, mimeType: string):
     } else if (/\b(diagnosis|symptoms|c\/o|clinical notes|complaints)\b/i.test(lowerLine)) {
       currentZone = "DIAGNOSIS";
       continue;
-    } else if (/\b(vitals|temperature|bp|pulse|weight|height)\b/i.test(lowerLine)) {
-      currentZone = "VITALS";
+    } else if (/\b(vitals|temperature|bp|pulse|weight|height|advice|follow up|dr\.|doctor|reg no|disclaimer)\b/i.test(lowerLine)) {
+      currentZone = "OTHER";
       continue;
     }
 
-    if (currentZone === "DIAGNOSIS") {
+    // Always check for strict dosage match to auto-detect medicines even if zone failed
+    const dosageMatch = line.match(/(\d+(\.\d+)?)\s*(mg|ml|g|mcg|iu|tablet(s)?|cap(sule(s)?)?|drop(s)?)/i);
+    const hasStrictDosage = !!dosageMatch;
+
+    if (currentZone === "DIAGNOSIS" && !hasStrictDosage) {
+      // Prevent consuming doctor names, reg numbers, disclaimers
+      if (lowerLine.includes("dr.") || lowerLine.includes("reg") || lowerLine.includes("disclaimer") || line.length > 60) {
+        currentZone = "OTHER";
+        continue;
+      }
       const cleaned = line.replace(/^[\-\•\*\d\.]+\s*/, '').trim();
-      if (cleaned.length > 2 && !/\d/.test(cleaned)) diagnoses.push(cleaned);
-    } else if (currentZone === "MEDICATIONS") {
-      const dosageMatch = line.match(/(\d+(\.\d+)?)\s*(mg|ml|g|mcg|iu|tablet(s)?|cap(sule(s)?)?|drop(s)?)/i);
+      if (cleaned.length > 2 && !/\d/.test(cleaned) && cleaned.length < 40) diagnoses.push(cleaned);
+    } 
+    
+    if (currentZone === "MEDICATIONS" || hasStrictDosage) {
       const dosage = dosageMatch ? dosageMatch[0] : null;
       
       let frequency = null;
@@ -144,6 +157,7 @@ async function fallbackPrescriptionExtraction(buffer: Buffer, mimeType: string):
       if (/\b(after meal(s)?|pc)\b/i.test(line)) timing_instructions = "After meals";
       else if (/\b(before meal(s)?|ac|empty stomach)\b/i.test(line)) timing_instructions = "Before meals";
       
+      // Match the drug name
       const drugMatch = line.match(/(?:tab|tbl|tablet|cap|capsule|syrup|inj)?\s*([A-Za-z]{3,25})/i);
       if (drugMatch && drugMatch[1]) {
         rawMedications.push({
@@ -156,7 +170,8 @@ async function fallbackPrescriptionExtraction(buffer: Buffer, mimeType: string):
     }
   }
 
-  const sanitizedMeds = sanitizeMedications(rawMedications);
+  // Inject a 'strict_unit_matched' property so sanitizeMedications knows it's highly likely a drug
+  const sanitizedMeds = sanitizeMedications(rawMedications.map(m => ({...m, _has_unit: !!m.dosage})) as any);
 
   return {
     documentType: "prescription",
