@@ -84,6 +84,19 @@ export async function POST(req: Request) {
     const base64Data = buffer.toString("base64")
     const doctorName = extractedData.doctor?.name || null
 
+    const parseValidDate = (dateStr: string | null | undefined): Date => {
+      if (!dateStr) return new Date();
+      // Try parsing Indian format DD/MM/YYYY
+      const parts = dateStr.split(/[\/\-\.]/);
+      if (parts.length === 3 && parts[0].length <= 2 && parseInt(parts[1]) <= 12) {
+        // Assume DD/MM/YYYY
+        const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        if (!isNaN(d.getTime())) return d;
+      }
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? new Date() : d;
+    };
+
     // Store PDF/Image binary directly in Turso database as Base64
     const report = await prisma.report.create({
       data: {
@@ -96,7 +109,7 @@ export async function POST(req: Request) {
         parsedJson: JSON.stringify(extractedData),
         aiSummary: aiSummary,
         labName: extractedData.labName || (extractedData.documentType === "lab_report" ? "Extracted Lab Report" : "Medical Document"),
-        reportDate: extractedData.testDate ? new Date(extractedData.testDate) : (extractedData.doctor?.date ? new Date(extractedData.doctor.date) : new Date()),
+        reportDate: parseValidDate(extractedData.testDate || extractedData.doctor?.date),
       },
     })
 
