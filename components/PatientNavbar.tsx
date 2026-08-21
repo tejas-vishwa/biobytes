@@ -34,10 +34,10 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
         </Link>
 
         {/* Desktop Navigation - Hidden in favor of universal hamburger menu */}
-        <nav className="hidden">
+        <nav className="hidden"></nav>
 
         {/* Desktop Right Controls - Hidden in favor of universal hamburger menu */}
-        <div className="hidden">
+        <div className="hidden"></div>
 
         {/* Universal Right Controls & Menu Toggle */}
         <div className="flex items-center gap-2">

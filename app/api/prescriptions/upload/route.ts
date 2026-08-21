@@ -32,10 +32,10 @@ export async function POST(req: Request) {
 
     // Map extracted medications
     const medicines = sanitizedMeds.map(m => ({
-      name: m.medicineName,
+      name: m.drug_name,
       dosage: m.dosage || "As prescribed",
       frequency: m.frequency || "As directed",
-      duration: m.duration || undefined
+      duration: m.timing_instructions || undefined
     }))
 
     const doctorName = extractedData.doctor?.name || null
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         rawText: rawText,
         doctorName: doctorName,
         medicinesJson: JSON.stringify(medicines),
-        symptomsJson: JSON.stringify([]),
+        symptomsJson: JSON.stringify(extractedData.diagnoses_and_symptoms || []),
         vitalsJson: JSON.stringify({}),
       }
     })
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         fileName: prescription.fileName,
         doctorName: prescription.doctorName,
         medicines,
-        symptoms: [],
+        symptoms: extractedData.diagnoses_and_symptoms || [],
         vitals: {},
         createdAt: prescription.createdAt
       },
