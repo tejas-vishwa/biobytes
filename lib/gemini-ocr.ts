@@ -74,7 +74,7 @@ export function sanitizeMedications(medications: ExtractedMedication[]): Extract
   return cleanList
 }
 
-export async function extractPrescriptionData(buffer: Buffer, mimeType: string): Promise<ExtractedMedicalData> {
+export async function extractPrescriptionData(buffer: Buffer, mimeType: string): Promise<any> {
   return await fallbackPrescriptionExtraction(buffer, mimeType)
 }
 
@@ -83,7 +83,7 @@ export async function extractMedicalData(buffer: Buffer, mimeType: string): Prom
 }
 
 
-async function fallbackPrescriptionExtraction(buffer: Buffer, mimeType: string): Promise<ExtractedMedicalData> {
+async function fallbackPrescriptionExtraction(buffer: Buffer, mimeType: string): Promise<any> {
   let extractedText = ""
 
   if (mimeType.includes("pdf")) extractedText = await extractTextFromPDF(buffer)
@@ -97,52 +97,34 @@ async function fallbackPrescriptionExtraction(buffer: Buffer, mimeType: string):
     }
   }
 
-  // LLM extraction
-  const systemPrompt = `You are a medical data extraction assistant. You will receive raw OCR text from a prescription.
-CRITICAL INSTRUCTIONS:
-- Ignore table headers like '#', 'Medicine', 'Dosage', 'Duration', and 'Instructions'.
-- Do NOT put medication names, dosages, or instructions into the symptoms or diagnosis arrays.
-- Extract the actual medical condition into a single 'diagnosis' string (e.g., 'Acute Gastritis', 'Enteric Fever').
-- Output strictly in the following JSON schema:`;
+  const systemPrompt = `You are an expert medical transcriptionist. Extract all clinical details from this prescription into valid JSON. Do not include markdown codeblocks or extra text.
 
-  const jsonSchema = {
-    type: "OBJECT",
-    properties: {
-      diagnosis: { type: "STRING", description: "Extract the main illness/condition only. Example: Acute Gastritis" },
-      vitals: {
-        type: "OBJECT",
-        properties: {
-          weight: { type: "STRING", nullable: true },
-          temperature: { type: "STRING", nullable: true },
-          blood_pressure: { type: "STRING", nullable: true },
-          pulse: { type: "STRING", nullable: true }
-        }
-      },
-      medications: {
-        type: "ARRAY",
-        items: {
-          type: "OBJECT",
-          properties: {
-            name: { type: "STRING", description: "e.g., Tab. Paracetamol 650mg" },
-            dosage: { type: "STRING", description: "e.g., 1-0-1 or 1 SOS" },
-            duration: { type: "STRING", description: "e.g., 5 Days" },
-            instructions: { type: "STRING", description: "e.g., After meals" }
-          },
-          required: ["name"]
-        }
-      },
-      advice: {
-        type: "ARRAY",
-        items: { type: "STRING" },
-        description: "General doctor advice"
-      },
-      doctorName: { type: "STRING", nullable: true },
-      date: { type: "STRING", nullable: true }
-    },
-    required: ["diagnosis", "medications"]
-  };
+Return exactly this JSON schema:
+{
+  "documentType": "prescription",
+  "patientName": "string or null",
+  "date": "string (YYYY-MM-DD or DD/MM/YYYY) or null",
+  "diagnosis": ["string (e.g., Acute Gastritis, Viral Infection)"],
+  "symptoms": ["string"],
+  "vitals": {
+    "temperature": "string or null",
+    "bloodPressure": "string or null",
+    "pulseRate": "string or null",
+    "weight": "string (e.g., 70 kg) or null"
+  },
+  "medications": [
+    {
+      "name": "string (e.g., Cap. Pantoprazole 40mg)",
+      "dosage": "string (e.g., 1-0-0)",
+      "duration": "string (e.g., 7 Days)",
+      "instructions": "string (e.g., 30 mins before breakfast)"
+    }
+  ],
+  "advice": ["string (dietary or general advice)"],
+  "doctorName": "string or null"
+}`;
 
-  let parsed: any = { diagnosis: null, medications: [] };
+  let parsed: any = { documentType: "prescription", diagnosis: [], symptoms: [], medications: [], vitals: {} };
 
   try {
     const response = await ai.models.generateContent({
@@ -150,40 +132,22 @@ CRITICAL INSTRUCTIONS:
       contents: `${systemPrompt}\n\nRaw OCR Text:\n${extractedText}`,
       config: {
         responseMimeType: "application/json",
-        responseSchema: jsonSchema as any,
         temperature: 0.1
       }
     });
     
     if (response.text) {
-      parsed = JSON.parse(response.text);
+      const cleaned = response.text
+        .replace(/```json/gi, "")
+        .replace(/```/g, "")
+        .trim();
+      parsed = JSON.parse(cleaned);
     }
   } catch (err) {
-    console.error("LLM Extraction failed:", err);
+    console.error("Failed to parse Gemini OCR JSON:", err);
   }
 
-  // Map back to ExtractedMedicalData
-  const mappedMedications = (parsed.medications || []).map((m: any) => ({
-    name: m.name,
-    dosage: m.dosage || null,
-    duration: m.duration || null,
-    instructions: m.instructions || null
-  }));
-
-  const diagnoses = [];
-  if (parsed.diagnosis) diagnoses.push(parsed.diagnosis);
-  if (parsed.advice && Array.isArray(parsed.advice)) diagnoses.push(...parsed.advice);
-
-  return {
-    documentType: "prescription",
-    patient: { name: null, age: null, gender: null },
-    doctor: { name: parsed.doctorName || null, date: parsed.date || new Date().toISOString().split("T")[0] },
-    diagnoses_and_symptoms: diagnoses.length > 0 ? diagnoses : null,
-    medications: mappedMedications,
-    biomarkers: null,
-    labName: null,
-    testDate: parsed.date || null
-  }
+  return parsed;
 }
 
 /**

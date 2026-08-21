@@ -268,42 +268,30 @@ export default function PrescriptionsPage() {
                   <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                     <Pill className="h-4 w-4" /> Medicines & Tablets Extracted
                   </h3>
-                  {selectedPrescription.medicines?.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">No specific medicines detected.</p>
-                  ) : (
+                  {selectedPrescription.medicines && selectedPrescription.medicines.length > 0 ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {selectedPrescription.medicines.map((m: any, i: number) => (
-                        <div key={i} className="p-3 rounded-xl border bg-card/60 flex items-start justify-between shadow-sm">
+                      {selectedPrescription.medicines.map((med: any, idx: number) => (
+                        <div key={idx} className="p-3 bg-white/70 border rounded-lg flex justify-between items-center dark:bg-card/60">
                           <div>
-                            <p className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                              <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" /> {m.name}
+                            <p className="font-semibold text-gray-900 dark:text-foreground">{med.name}</p>
+                            <p className="text-xs text-gray-600 dark:text-muted-foreground">
+                              {med.dosage} • {med.duration} • {med.instructions}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">Dosage: <span className="font-semibold text-foreground">{m.dosage}</span></p>
                           </div>
-                          {m.instructions && (
-                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded">
-                              {m.instructions}
-                            </span>
-                          )}
-                          {m.duration && (
-                            <span className="text-[11px] font-medium text-slate-700 bg-slate-100 dark:bg-slate-900 dark:text-slate-300 px-2 py-0.5 rounded ml-2">
-                              {m.duration}
-                            </span>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="mt-2 text-xs h-7 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                          <button 
+                            className="text-xs px-3 py-1 bg-teal-600 text-white rounded-md shadow-sm"
                             onClick={() => {
-                              setReminderMedicine(m.name)
+                              setReminderMedicine(med.name)
                               setIsReminderModalOpen(true)
                             }}
                           >
-                            <BellPlus className="h-3 w-3 mr-1" /> Add Reminder
-                          </Button>
+                            Set Reminder
+                          </button>
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No specific medicines detected.</p>
                   )}
                 </div>
 
@@ -345,7 +333,7 @@ export default function PrescriptionsPage() {
                         <Activity className="h-3.5 w-3.5 mr-1" /> Blood Pressure
                       </div>
                       <p className="font-bold text-base">
-                        {selectedPrescription.vitals?.bp || "Not recorded"}
+                        {selectedPrescription.vitals?.bloodPressure || selectedPrescription.vitals?.bp || "Not recorded"}
                       </p>
                     </div>
 
@@ -354,7 +342,7 @@ export default function PrescriptionsPage() {
                         <HeartPulse className="h-3.5 w-3.5 mr-1" /> Pulse Rate
                       </div>
                       <p className="font-bold text-base">
-                        {selectedPrescription.vitals?.pulse || "Not recorded"}
+                        {selectedPrescription.vitals?.pulseRate || selectedPrescription.vitals?.pulse || "Not recorded"}
                       </p>
                     </div>
 

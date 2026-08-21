@@ -52,8 +52,16 @@ interface HealthAlertsProps {
   patientTrendHistory: any[]
 }
 
+interface Alert {
+  severity: string;
+  test_name: string;
+  urgent_warning?: string;
+  advice?: string;
+  result: string;
+}
+
 export function HealthAlerts({ patientTrendHistory }: HealthAlertsProps) {
-  const alerts: any[] = []
+  const alerts: Alert[] = []
 
   patientTrendHistory.forEach(test => {
     if (!test.history || test.history.length === 0) return
@@ -76,21 +84,21 @@ export function HealthAlerts({ patientTrendHistory }: HealthAlertsProps) {
     const severity = calculateSeverity(value, min, max)
 
     if (severity === 'RED') {
-      const isHigh = value > max
+      const isHigh = value > max;
       alerts.push({
         severity: 'RED',
         test_name: test.name,
-        urgent_warning: \`URGENT: Your \${test.name} is critically \${isHigh ? 'high' : 'low'}. Please consult a doctor immediately.\`,
-        result: \`\${value} \${test.unit || ''}\`.trim()
-      })
+        urgent_warning: `URGENT: Your ${test.name} is critically ${isHigh ? 'high' : 'low'}. Please consult a doctor immediately.`,
+        result: `${value} ${test.unit || ''}`.trim()
+      });
     } else if (severity === 'YELLOW') {
-      const isHigh = value > max
+      const isHigh = value > max;
       alerts.push({
         severity: 'YELLOW',
         test_name: test.name,
-        advice: \`Attention needed: Your \${test.name} is slightly flagged. Discuss this at your next checkup.\`,
-        result: \`\${value} \${test.unit || ''}\`.trim()
-      })
+        advice: `Attention needed: Your ${test.name} is slightly flagged. Discuss this at your next checkup.`,
+        result: `${value} ${test.unit || ''}`.trim()
+      });
     }
   })
 
@@ -105,12 +113,12 @@ export function HealthAlerts({ patientTrendHistory }: HealthAlertsProps) {
   
   let overallStatus = 'NORMAL'
   if (hasCritical) overallStatus = 'CRITICAL'
-  else if (hasYellow) overallStatus = 'ATTENTION_NEEDED'
+  else if (hasYellow) overallStatus = 'ATTENTION_NEEDED';
 
   return (
-    <Card className={\`border-t-4 \${overallStatus === 'CRITICAL' ? 'border-t-red-600 animate-pulse bg-red-50 dark:bg-red-950/20' : overallStatus === 'ATTENTION_NEEDED' ? 'border-t-amber-500' : 'border-t-green-500'}\`}>
+    <Card className={`border-t-4 ${overallStatus === 'CRITICAL' ? 'border-t-red-600 animate-pulse bg-red-50 dark:bg-red-950/20' : overallStatus === 'ATTENTION_NEEDED' ? 'border-t-amber-500' : 'border-t-green-500'}`}>
       <CardHeader className="pb-3">
-        <div className={\`flex items-center space-x-2 \${overallStatus === 'CRITICAL' ? 'text-red-600 dark:text-red-500' : overallStatus === 'ATTENTION_NEEDED' ? 'text-amber-600 dark:text-amber-500' : 'text-green-600 dark:text-green-500'}\`}>
+        <div className={`flex items-center space-x-2 ${overallStatus === 'CRITICAL' ? 'text-red-600 dark:text-red-500' : overallStatus === 'ATTENTION_NEEDED' ? 'text-amber-600 dark:text-amber-500' : 'text-green-600 dark:text-green-500'}`}>
           <AlertCircle className="h-5 w-5" />
           <CardTitle className="text-xl">Health Alerts</CardTitle>
         </div>
@@ -123,11 +131,11 @@ export function HealthAlerts({ patientTrendHistory }: HealthAlertsProps) {
             {alerts.map((alert, i) => (
               <li 
                 key={i} 
-                className={\`p-3 rounded-md text-sm border \${
+                className={`p-3 rounded-md text-sm border ${
                   alert.severity === 'RED' 
                     ? 'bg-red-100 dark:bg-red-900/40 border-red-200 dark:border-red-800' 
                     : 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900'
-                }\`}
+                }`}
               >
                 {alert.severity === 'RED' ? (
                   <>

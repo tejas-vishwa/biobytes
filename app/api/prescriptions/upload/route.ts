@@ -27,10 +27,10 @@ export async function POST(req: Request) {
     // 1. Process prescription document via Gemini Structured Outputs (strictly for prescriptions)
     const extractedData = await extractPrescriptionData(buffer, mimeType)
 
-    // Sanitize and filter out nonsensical OCR artifacts
+    console.log("Gemini Raw Prescription Output:", extractedData)
+
     const sanitizedMeds = sanitizeMedications(extractedData.medications || [])
 
-    // Map extracted medications
     const medicines = sanitizedMeds.map(m => ({
       name: m.name,
       dosage: m.dosage || "As prescribed",
@@ -38,10 +38,17 @@ export async function POST(req: Request) {
       instructions: m.instructions || undefined
     }))
 
-    const doctorName = extractedData.doctor?.name || null
+    const doctorName = extractedData.doctorName || extractedData.doctor?.name || null
     const rawText = JSON.stringify({ ...extractedData, medications: sanitizedMeds })
 
-    // 2. Save Prescription record to Turso Database
+    const combinedSymptoms = [
+      ...(extractedData.diagnosis || []),
+      ...(extractedData.symptoms || []),
+      ...(extractedData.diagnoses_and_symptoms || [])
+    ]
+
+    const vitalsJson = extractedData.vitals || {}
+
     const prescription = await prisma.prescription.create({
       data: {
         patientId: session.user.id,
@@ -52,8 +59,8 @@ export async function POST(req: Request) {
         rawText: rawText,
         doctorName: doctorName,
         medicinesJson: JSON.stringify(medicines),
-        symptomsJson: JSON.stringify(extractedData.diagnoses_and_symptoms || []),
-        vitalsJson: JSON.stringify({}),
+        symptomsJson: JSON.stringify(combinedSymptoms),
+        vitalsJson: JSON.stringify(vitalsJson),
       }
     })
 
