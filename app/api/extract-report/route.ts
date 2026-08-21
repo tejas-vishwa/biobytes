@@ -76,7 +76,7 @@ export async function POST(req: Request) {
         abnormalCount > 0 ? `${abnormalCount} biomarker(s) flagged outside reference range.` : "All extracted biomarkers are within normal reference ranges."
       } Key metrics: ${biomarkersList.slice(0, 5).map(b => `${b.testName} (${b.value} ${b.unit || ''})`).join(", ")}.`
     } else if (extractedData.medications && extractedData.medications.length > 0) {
-      aiSummary = `Extracted prescription with ${extractedData.medications.length} medication(s): ${extractedData.medications.map(m => m.drug_name).join(", ")}.`
+      aiSummary = `Extracted prescription with ${extractedData.medications.length} medication(s): ${extractedData.medications.map(m => m.name).join(", ")}.`
     } else {
       aiSummary = `Processed medical document classified as ${extractedData.documentType}.`
     }

@@ -32,10 +32,10 @@ export async function POST(req: Request) {
 
     // Map extracted medications
     const medicines = sanitizedMeds.map(m => ({
-      name: m.drug_name,
+      name: m.name,
       dosage: m.dosage || "As prescribed",
-      frequency: m.frequency || "As directed",
-      duration: m.timing_instructions || undefined
+      duration: m.duration || undefined,
+      instructions: m.instructions || undefined
     }))
 
     const doctorName = extractedData.doctor?.name || null

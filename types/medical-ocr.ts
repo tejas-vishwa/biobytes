@@ -20,10 +20,10 @@ export interface ExtractedBiomarker {
 }
 
 export interface ExtractedMedication {
-  drug_name: string;
+  name: string;
   dosage?: string | null;
-  frequency?: string | null;
-  timing_instructions?: string | null;
+  duration?: string | null;
+  instructions?: string | null;
 }
 
 export interface ExtractedMedicalData {

@@ -280,9 +280,14 @@ export default function PrescriptionsPage() {
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">Dosage: <span className="font-semibold text-foreground">{m.dosage}</span></p>
                           </div>
-                          {m.frequency && (
+                          {m.instructions && (
                             <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded">
-                              {m.frequency}
+                              {m.instructions}
+                            </span>
+                          )}
+                          {m.duration && (
+                            <span className="text-[11px] font-medium text-slate-700 bg-slate-100 dark:bg-slate-900 dark:text-slate-300 px-2 py-0.5 rounded ml-2">
+                              {m.duration}
                             </span>
                           )}
                           <Button 
