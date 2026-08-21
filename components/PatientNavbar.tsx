@@ -33,14 +33,49 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
           <QurixLogo className="h-7 md:h-8 w-auto" showTagline={true} />
         </Link>
 
-        {/* Desktop Navigation - Hidden in favor of universal hamburger menu */}
-        <nav className="hidden"></nav>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-6">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center text-sm font-medium transition-colors hover:text-primary ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.name}
+              </Link>
+            )
+          })}
+        </nav>
 
-        {/* Desktop Right Controls - Hidden in favor of universal hamburger menu */}
-        <div className="hidden"></div>
+        {/* Desktop Right Controls */}
+        <div className="hidden md:flex items-center space-x-4">
+          <ThemeToggle />
+          {userName && (
+            <div className="flex items-center space-x-2 px-3 py-1.5 bg-primary/5 rounded-full border border-primary/10">
+              <span className="text-sm font-medium">Hello, {userName}</span>
+              {subscriptionTier === "QURIX_PLUS" && (
+                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 py-0.5 rounded-full shadow-sm">
+                  <Sparkles className="h-3 w-3" /> Plus
+                </span>
+              )}
+            </div>
+          )}
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="flex items-center text-sm font-medium text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Sign out
+          </button>
+        </div>
 
-        {/* Universal Right Controls & Menu Toggle */}
-        <div className="flex items-center gap-2">
+        {/* Mobile Right Controls & Menu Toggle */}
+        <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle />
           <button
             type="button"
