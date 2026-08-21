@@ -40,156 +40,133 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
  * Sanitizes and validates extracted medications list.
  * Strips out header words, prepositions, timing instructions, item list numbers, and non-drug text.
  */
+
+// Hardcoded drug dictionary for validation
+const VALID_DRUGS = new Set([
+  "paracetamol", "azithromycin", "dolo", "pan", "darolac", "amoxicillin", 
+  "pantoprazole", "cetirizine", "ibuprofen", "aspirin", "metformin", 
+  "atorvastatin", "cefim", "cefixime", "augmentin", "linezolid", 
+  "levofloxacin", "ciprofloxacin", "omeprazole", "ranitidine", "telmisartan", 
+  "amlodipine", "montelukast", "calpol", "crocin", "allegra", "sinarest"
+]);
+
 export function sanitizeMedications(medications: ExtractedMedication[]): ExtractedMedication[] {
   if (!Array.isArray(medications)) return []
-
   const cleanList: ExtractedMedication[] = []
 
   for (const m of medications) {
-    if (!m || typeof m.medicineName !== "string") continue
+    if (!m || typeof m.drug_name !== "string") continue
 
-    let name = m.medicineName.trim().replace(/^[\d\.\-\s]+/, "").trim()
-
-    // Skip short or empty names
+    let name = m.drug_name.trim().replace(/^[\d\.\-\s]+/, "").trim()
     if (name.length < 3) continue
 
     const lowerName = name.toLowerCase()
 
-    // Skip if name is purely numeric or special characters
-    if (/^[\d\.\-\s\:\,]+$/.test(name)) continue
-
-    // Skip if name is a known non-medicine word/header
-    if (NON_MEDICINE_WORDS.has(lowerName)) continue
-
-    // Skip if name starts with or consists of instruction phrases
-    if (/^(take|after|before|for|every|with|on|in|to|avoid|follow|diet|note|dr|rx)\b/i.test(name) &&
-        !/\b(paracetamol|azithromycin|dolo|pan|darolac|amoxicillin|pantoprazole|cetirizine|ibuprofen|aspirin|metformin|atorvastatin|cefim|cefixime|augmentin|linezolid|levofloxacin|ciprofloxacin|omeprazole|ranitidine|telmisartan|amlodipine|montelukast)\b/i.test(name)) {
-      continue
+    let isValidDrug = false;
+    for (const validDrug of VALID_DRUGS) {
+      if (lowerName.includes(validDrug)) {
+        isValidDrug = true;
+        break;
+      }
     }
-
-    // Clean dosage: if dosage is just an item number like "1.", "2.", "5", "7" without units, nullify or fix it
-    let dosage = m.dosage ? m.dosage.trim() : null
-    if (dosage && (/^[\d\.\s]+$/.test(dosage) && parseFloat(dosage) < 20)) {
-      dosage = null
-    }
-
-    // Clean frequency
-    let frequency = m.frequency ? m.frequency.trim() : null
-    if (frequency && NON_MEDICINE_WORDS.has(frequency.toLowerCase())) {
-      frequency = null
-    }
+    
+    if (!isValidDrug) continue;
 
     cleanList.push({
-      medicineName: name,
-      dosage,
-      frequency,
-      duration: m.duration ? m.duration.trim() : null
+      drug_name: name,
+      dosage: m.dosage ? m.dosage.trim() : null,
+      frequency: m.frequency ? m.frequency.trim() : null,
+      timing_instructions: m.timing_instructions ? m.timing_instructions.trim() : null
     })
   }
 
   return cleanList
 }
 
-/**
- * Main entrypoint to extract structured prescription data using local OCR parsing and intelligent sanitization.
- */
-export async function extractPrescriptionData(
-  buffer: Buffer,
-  mimeType: string
-): Promise<ExtractedMedicalData> {
+export async function extractPrescriptionData(buffer: Buffer, mimeType: string): Promise<ExtractedMedicalData> {
   return await fallbackPrescriptionExtraction(buffer, mimeType)
 }
 
-/**
- * General entrypoint for medical document extraction using local parsing engines.
- */
-export async function extractMedicalData(
-  buffer: Buffer,
-  mimeType: string
-): Promise<ExtractedMedicalData> {
+export async function extractMedicalData(buffer: Buffer, mimeType: string): Promise<ExtractedMedicalData> {
   return await fallbackLabReportExtraction(buffer, mimeType)
 }
 
-/**
- * Local OCR extraction for prescriptions with line-by-line drug pattern matching.
- */
-async function fallbackPrescriptionExtraction(
-  buffer: Buffer,
-  mimeType: string
-): Promise<ExtractedMedicalData> {
+async function fallbackPrescriptionExtraction(buffer: Buffer, mimeType: string): Promise<ExtractedMedicalData> {
   let extractedText = ""
 
-  if (mimeType.includes("pdf")) {
-    extractedText = await extractTextFromPDF(buffer)
-  }
-
+  if (mimeType.includes("pdf")) extractedText = await extractTextFromPDF(buffer)
+  
   if (!extractedText.trim()) {
     try {
       const ret = await Tesseract.recognize(buffer, "eng")
       extractedText = ret.data.text || ""
-    } catch (err) {
-      console.error("Tesseract fallback failed:", err)
-    }
+    } catch (err) {}
   }
 
-  const cleanSalutations = (str: string) =>
-    str.replace(/\b(mr\.|mrs\.|ms\.|smt\.|shri\.|dr\.|master\.|miss\.|mr|mrs|ms|smt|shri|dr|master|miss)\b/gi, "").replace(/\s+/g, " ").trim()
-
-  let patientName: string | null = null
-  const nameMatch = extractedText.match(/(?:patient\s*name|patient\'?s?\s*name|name\s*of\s*patient|name)\s*[:\-\=]?\s*(?:mr\.|mrs\.|ms\.|dr\.)?\s*([A-Za-z\s\.]{2,50})/i)
-  if (nameMatch && nameMatch[1]) {
-    let rawName = nameMatch[1].trim().replace(/\b(age|sex|gender|dob|ref|lab|date)\b.*/i, "").trim()
-    rawName = cleanSalutations(rawName)
-    if (rawName.length > 1) patientName = rawName
-  }
-
-  let doctorName: string | null = null
-  const docMatch = extractedText.match(/(?:dr\.|doctor)[^\w]?\s*([a-z\s\.]+)/i)
-  if (docMatch && docMatch[1]) {
-    doctorName = `Dr. ${docMatch[1].trim().slice(0, 30)}`
-  }
-
-  const rawMedications: ExtractedMedication[] = []
+  const lines = extractedText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  const marginCount = Math.floor(lines.length * 0.1);
+  const coreLines = lines.slice(marginCount, lines.length - marginCount);
   
-  const lines = extractedText.split("\n")
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) continue
+  let currentZone = "NONE";
+  const diagnoses: string[] = [];
+  const rawMedications: ExtractedMedication[] = [];
 
-    const lineMatch = trimmed.match(/(?:tab|tbl|tablet|cap|capsule|syrup|inj)?\s*([A-Za-z]{3,25})\s+([\d\.]+\s*(?:mg|g|mcg|ml|iu)?)(?:\s+([\d\-]{3,7}|once daily|twice daily|thrice daily|1-0-1|1-1-1|1-0-0|0-0-1|OD|BD|TDS|SOS))?/i)
+  for (const line of coreLines) {
+    const lowerLine = line.toLowerCase();
+    
+    if (/\b(rx|medications|treatment|medicines|drugs)\b/i.test(lowerLine)) {
+      currentZone = "MEDICATIONS";
+      continue;
+    } else if (/\b(diagnosis|symptoms|c\/o|clinical notes|complaints)\b/i.test(lowerLine)) {
+      currentZone = "DIAGNOSIS";
+      continue;
+    } else if (/\b(vitals|temperature|bp|pulse|weight|height)\b/i.test(lowerLine)) {
+      currentZone = "VITALS";
+      continue;
+    }
 
-    if (lineMatch && lineMatch[1]) {
-      const medName = lineMatch[1].trim()
-      const rawDosage = lineMatch[2]?.trim() || null
-      const freq = lineMatch[3]?.trim() || null
-
-      rawMedications.push({
-        medicineName: medName,
-        dosage: rawDosage,
-        frequency: freq,
-        duration: null
-      })
+    if (currentZone === "DIAGNOSIS") {
+      const cleaned = line.replace(/^[\-\•\*\d\.]+\s*/, '').trim();
+      if (cleaned.length > 2 && !/\d/.test(cleaned)) diagnoses.push(cleaned);
+    } else if (currentZone === "MEDICATIONS") {
+      const dosageMatch = line.match(/(\d+(\.\d+)?)\s*(mg|ml|g|mcg|iu|tablet(s)?|cap(sule(s)?)?|drop(s)?)/i);
+      const dosage = dosageMatch ? dosageMatch[0] : null;
+      
+      let frequency = null;
+      let timing_instructions = null;
+      
+      if (/\b(OD|1-0-0|0-0-1|once daily)\b/i.test(line)) frequency = "Once Daily (OD)";
+      else if (/\b(BD|BID|1-0-1|1-1-0|twice daily)\b/i.test(line)) frequency = "Twice Daily (BD)";
+      else if (/\b(TDS|TID|1-1-1|thrice daily)\b/i.test(line)) frequency = "Thrice Daily (TDS)";
+      else if (/\b(QID|four times)\b/i.test(line)) frequency = "Four times daily (QID)";
+      else if (/\b(SOS|as needed)\b/i.test(line)) frequency = "As needed (SOS)";
+      
+      if (/\b(after meal(s)?|pc)\b/i.test(line)) timing_instructions = "After meals";
+      else if (/\b(before meal(s)?|ac|empty stomach)\b/i.test(line)) timing_instructions = "Before meals";
+      
+      const drugMatch = line.match(/(?:tab|tbl|tablet|cap|capsule|syrup|inj)?\s*([A-Za-z]{3,25})/i);
+      if (drugMatch && drugMatch[1]) {
+        rawMedications.push({
+          drug_name: drugMatch[1].trim(),
+          dosage,
+          frequency,
+          timing_instructions
+        });
+      }
     }
   }
 
-  const sanitizedMeds = sanitizeMedications(rawMedications)
-
-  let testDate: string | null = null
-  const dateMatch = extractedText.match(/(?:date|date of prescription|prescribed on|date of visit)\s*[:\-\=]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/i)
-  if (dateMatch && dateMatch[1]) {
-    testDate = dateMatch[1].trim()
-  }
-
-  const labName: string | null = null
+  const sanitizedMeds = sanitizeMedications(rawMedications);
 
   return {
     documentType: "prescription",
-    patient: { name: patientName, age: null, gender: null },
-    doctor: { name: doctorName, date: testDate || new Date().toISOString().split("T")[0] },
+    patient: { name: null, age: null, gender: null },
+    doctor: { name: null, date: new Date().toISOString().split("T")[0] },
+    diagnoses_and_symptoms: diagnoses.length > 0 ? diagnoses : null,
     medications: sanitizedMeds,
     biomarkers: null,
-    labName,
-    testDate
+    labName: null,
+    testDate: null
   }
 }
 
