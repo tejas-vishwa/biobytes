@@ -33,58 +33,14 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
           <QurixLogo className="h-7 md:h-8 w-auto" showTagline={true} />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6 ml-6">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-primary flex items-center ${
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
-                }`}
-              >
-                <Icon className="mr-2 h-4 w-4" /> {item.name}
-              </Link>
-            )
-          })}
-        </nav>
+        {/* Desktop Navigation - Hidden in favor of universal hamburger menu */}
+        <nav className="hidden">
 
-        {/* Desktop Right Controls */}
-        <div className="hidden md:flex items-center gap-3">
-          <ThemeToggle />
-          {userName && (
-            <div className={`flex items-center p-1.5 rounded-full pl-4 pr-1.5 transition-all duration-500 ${
-              subscriptionTier === "QURIX_PLUS" 
-                ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.15)]" 
-                : ""
-            }`}>
-              <span className={`text-sm font-medium mr-3 ${
-                subscriptionTier === "QURIX_PLUS"
-                  ? "text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 font-bold"
-                  : "text-foreground"
-              }`}>
-                Hello, {userName}
-              </span>
-              {subscriptionTier === "QURIX_PLUS" && (
-                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-widest bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-2.5 py-1.5 rounded-full shadow-md animate-gradient-x">
-                  <Sparkles className="h-3 w-3 text-amber-300 animate-pulse" /> QURIX Plus
-                </span>
-              )}
-            </div>
-          )}
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center border-l border-border pl-3"
-          >
-            <LogOut className="h-4 w-4 mr-2" /> Sign out
-          </button>
-        </div>
+        {/* Desktop Right Controls - Hidden in favor of universal hamburger menu */}
+        <div className="hidden">
 
-        {/* Mobile Right Controls & Sleek Theme-Blended Toggle */}
-        <div className="flex md:hidden items-center gap-2">
+        {/* Universal Right Controls & Menu Toggle */}
+        <div className="flex items-center gap-2">
           <ThemeToggle />
           <button
             type="button"
@@ -101,9 +57,9 @@ export function PatientNavbar({ userName, subscriptionTier }: PatientNavbarProps
         </div>
       </div>
 
-      {/* Full-Screen Mobile Menu Drawer Overlay (Seamless Theme Blending) */}
+      {/* Full-Screen Menu Drawer Overlay (Seamless Theme Blending) */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 w-full h-full min-h-screen z-[99999] bg-background text-foreground p-6 flex flex-col justify-between overflow-y-auto animate-in fade-in duration-200">
+        <div className="fixed inset-0 w-full h-full min-h-screen z-[99999] bg-background text-foreground p-6 flex flex-col justify-between overflow-y-auto animate-in fade-in duration-200">
           <div className="space-y-6">
             {/* Top Bar inside Full Screen Overlay */}
             <div className="flex items-center justify-between pb-4 border-b border-border/60">

@@ -233,7 +233,7 @@ async function fallbackLabReportExtraction(
   }
 
   let testDate: string | null = null
-  const dateMatch = extractedText.match(/(?:date|date of test|collected|registered|reported)\s*[:\-\=]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/i)
+  const dateMatch = extractedText.match(/(?:sample collected|date of collection|test date|registered on|report date|date|collected|registered|reported)\s*[:\-\=]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/i)
   if (dateMatch && dateMatch[1]) {
     testDate = dateMatch[1].trim()
   }

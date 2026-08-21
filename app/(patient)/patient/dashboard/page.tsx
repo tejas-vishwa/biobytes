@@ -192,8 +192,8 @@ export default async function PatientDashboard() {
                   <div key={report.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                     <div>
                       <p className="font-medium text-sm">{report.labName || "Lab Report"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {report.reportDate ? new Date(report.reportDate).toLocaleDateString() : 'Unknown date'}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Tested on: {report.reportDate ? new Date(report.reportDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown date'}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
