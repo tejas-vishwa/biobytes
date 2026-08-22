@@ -1,157 +1,190 @@
-"use client"
+"use client";
 
-import React from 'react'
-import { AlertCircle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React from "react";
+import { AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const parseRange = (referenceRange: string | null | undefined): [number, number] => {
-  if (!referenceRange) return [0, Infinity]
+// TODO: Shift threshold parsing to the data ingestion layer in v2.
+// Evaluating these string bounds client-side per render will bottleneck as historical arrays grow.
+export const parseMetricBounds = (rawRange: string | null | undefined): [number, number] => {
+  if (!rawRange) return [0, Infinity];
+
+  if (rawRange.includes("-")) {
+    const segments = rawRange.split("-");
+    return [parseFloat(segments[0]), parseFloat(segments[1])];
+  }
+
+  if (rawRange.includes("<")) {
+    return [0, parseFloat(rawRange.replace("<", "").trim())];
+  }
+
+  if (rawRange.includes(">")) {
+    return [parseFloat(rawRange.replace(">", "").trim()), Infinity];
+  }
+
+  return [0, Infinity];
+};
+
+export const assessRiskLevel = (val: number, minBound: number, maxBound: number) => {
+  if (val >= minBound && val <= maxBound) return "SAFE";
+
+  const diff = maxBound - minBound === Infinity ? minBound || maxBound : maxBound - minBound;
   
-  if (referenceRange.includes("-")) {
-    const parts = referenceRange.split("-")
-    return [parseFloat(parts[0]), parseFloat(parts[1])]
-  }
-  
-  if (referenceRange.includes("<")) {
-    const val = referenceRange.replace("<", "").trim()
-    return [0, parseFloat(val)]
+  // 15% tolerance buffer for non-critical outliers
+  const varianceLimit =
+    diff === Infinity || diff === 0
+      ? maxBound === Infinity
+        ? minBound * 0.15
+        : maxBound * 0.15
+      : diff * 0.15;
+
+  if (val > maxBound) {
+    return val <= maxBound + varianceLimit ? "WARNING" : "CRITICAL";
   }
 
-  if (referenceRange.includes(">")) {
-    const val = referenceRange.replace(">", "").trim()
-    return [parseFloat(val), Infinity]
+  if (val < minBound) {
+    return val >= minBound - varianceLimit ? "WARNING" : "CRITICAL";
   }
 
-  return [0, Infinity]
+  return "SAFE";
+};
+
+interface QxTrendDashboardProps {
+  qxPatientTrends: any[];
 }
 
-export const calculateSeverity = (value: number, min: number, max: number) => {
-  if (value >= min && value <= max) {
-    return 'GREEN'
-  }
-
-  const range = max - min === Infinity ? min || max : max - min
-  const threshold = (range === Infinity || range === 0) ? 
-      (max === Infinity ? min * 0.15 : max * 0.15) : 
-      range * 0.15
-
-  if (value > max) {
-    if (value <= max + threshold) return 'YELLOW'
-    return 'RED'
-  }
-
-  if (value < min) {
-    if (value >= min - threshold) return 'YELLOW'
-    return 'RED'
-  }
-
-  return 'GREEN'
+interface QxClinicalAlert {
+  riskLevel: string;
+  biomarkerName: string;
+  medicalDirective?: string;
+  flagAdvice?: string;
+  measuredResult: string;
 }
 
-interface HealthAlertsProps {
-  patientTrendHistory: any[]
-}
+export function HealthAlerts({ qxPatientTrends }: QxTrendDashboardProps) {
+  const activeAlerts: QxClinicalAlert[] = [];
 
-interface Alert {
-  severity: string;
-  test_name: string;
-  urgent_warning?: string;
-  advice?: string;
-  result: string;
-}
+  qxPatientTrends.forEach((metric) => {
+    if (!metric.history?.length) return;
 
-export function HealthAlerts({ patientTrendHistory }: HealthAlertsProps) {
-  const alerts: Alert[] = []
-
-  patientTrendHistory.forEach(test => {
-    if (!test.history || test.history.length === 0) return
+    // Sorting inline since API payload isn't guaranteed chronological 
+    const chronologicalHistory = [...metric.history].sort(
+      (a, b) => new Date(b.date || b.testDate).getTime() - new Date(a.date || a.testDate).getTime()
+    );
     
-    const sortedHistory = [...test.history].sort((a, b) => new Date(b.date || b.testDate).getTime() - new Date(a.date || a.testDate).getTime())
-    const latest = sortedHistory[0]
+    const recentReading = chronologicalHistory[0];
+    const numericVal = parseFloat(recentReading.value);
     
-    const value = parseFloat(latest.value)
-    if (isNaN(value)) return
+    if (isNaN(numericVal)) return;
 
-    let min = test.refMin
-    let max = test.refMax
-    
-    if (min === undefined || max === undefined || min === null || max === null) {
-      const parsed = parseRange(test.reference_range || test.referenceInterval)
-      min = parsed[0]
-      max = parsed[1]
+    let floor = metric.refMin;
+    let ceiling = metric.refMax;
+
+    if (floor == null || ceiling == null) {
+      const bounds = parseMetricBounds(metric.reference_range || metric.referenceInterval);
+      floor = bounds[0];
+      ceiling = bounds[1];
     }
 
-    const severity = calculateSeverity(value, min, max)
+    const riskState = assessRiskLevel(numericVal, floor, ceiling);
+    const exceededCeiling = numericVal > ceiling;
 
-    if (severity === 'RED') {
-      const isHigh = value > max;
-      alerts.push({
-        severity: 'RED',
-        test_name: test.name,
-        urgent_warning: `URGENT: Your ${test.name} is critically ${isHigh ? 'high' : 'low'}. Please consult a doctor immediately.`,
-        result: `${value} ${test.unit || ''}`.trim()
+    if (riskState === "CRITICAL") {
+      activeAlerts.push({
+        riskLevel: "CRITICAL",
+        biomarkerName: metric.name,
+        medicalDirective: `URGENT: ${metric.name} is critically ${
+          exceededCeiling ? "high" : "low"
+        }. Consult primary care immediately.`,
+        measuredResult: `${numericVal} ${metric.unit || ""}`.trim(),
       });
-    } else if (severity === 'YELLOW') {
-      const isHigh = value > max;
-      alerts.push({
-        severity: 'YELLOW',
-        test_name: test.name,
-        advice: `Attention needed: Your ${test.name} is slightly flagged. Discuss this at your next checkup.`,
-        result: `${value} ${test.unit || ''}`.trim()
+    } else if (riskState === "WARNING") {
+      activeAlerts.push({
+        riskLevel: "WARNING",
+        biomarkerName: metric.name,
+        flagAdvice: `Attention: ${metric.name} is flagged outside normal bounds. Note for next physical.`,
+        measuredResult: `${numericVal} ${metric.unit || ""}`.trim(),
       });
     }
-  })
+  });
 
-  alerts.sort((a, b) => {
-    if (a.severity === 'RED' && b.severity !== 'RED') return -1
-    if (a.severity !== 'RED' && b.severity === 'RED') return 1
-    return 0
-  })
+  // Force critical flags to the top of the feed
+  activeAlerts.sort((a, b) => {
+    if (a.riskLevel === "CRITICAL" && b.riskLevel !== "CRITICAL") return -1;
+    if (a.riskLevel !== "CRITICAL" && b.riskLevel === "CRITICAL") return 1;
+    return 0;
+  });
 
-  const hasCritical = alerts.some(a => a.severity === 'RED')
-  const hasYellow = alerts.some(a => a.severity === 'YELLOW')
-  
-  let overallStatus = 'NORMAL'
-  if (hasCritical) overallStatus = 'CRITICAL'
-  else if (hasYellow) overallStatus = 'ATTENTION_NEEDED';
+  const requiresUrgentCare = activeAlerts.some((a) => a.riskLevel === "CRITICAL");
+  const requiresObservation = activeAlerts.some((a) => a.riskLevel === "WARNING");
+
+  let panelState = "STABLE";
+  if (requiresUrgentCare) panelState = "ACTION_REQUIRED";
+  else if (requiresObservation) panelState = "EVALUATE";
 
   return (
-    <Card className={`border-t-4 ${overallStatus === 'CRITICAL' ? 'border-t-red-600 animate-pulse bg-red-50 dark:bg-red-950/20' : overallStatus === 'ATTENTION_NEEDED' ? 'border-t-amber-500' : 'border-t-green-500'}`}>
+    <Card
+      className={`border-t-4 ${
+        panelState === "ACTION_REQUIRED"
+          ? "border-t-red-600 animate-pulse bg-red-50 dark:bg-red-950/20"
+          : panelState === "EVALUATE"
+          ? "border-t-amber-500"
+          : "border-t-emerald-500"
+      }`}
+    >
       <CardHeader className="pb-3">
-        <div className={`flex items-center space-x-2 ${overallStatus === 'CRITICAL' ? 'text-red-600 dark:text-red-500' : overallStatus === 'ATTENTION_NEEDED' ? 'text-amber-600 dark:text-amber-500' : 'text-green-600 dark:text-green-500'}`}>
+        <div
+          className={`flex items-center space-x-2 ${
+            panelState === "ACTION_REQUIRED"
+              ? "text-red-600 dark:text-red-500"
+              : panelState === "EVALUATE"
+              ? "text-amber-600 dark:text-amber-500"
+              : "text-emerald-600 dark:text-emerald-500"
+          }`}
+        >
           <AlertCircle className="h-5 w-5" />
-          <CardTitle className="text-xl">Health Alerts</CardTitle>
+          <CardTitle className="text-xl tracking-tight">Clinical Alerts</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        {alerts.length === 0 ? (
-          <p className="text-sm text-green-700 dark:text-green-400 font-medium">All clear! No active alerts in the last 90 days. You are doing great!</p>
+        {activeAlerts.length === 0 ? (
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+            Biomarkers stable. No flagged deviations in the last 90 days.
+          </p>
         ) : (
           <ul className="space-y-4">
-            {alerts.map((alert, i) => (
-              <li 
-                key={i} 
-                className={`p-3 rounded-md text-sm border ${
-                  alert.severity === 'RED' 
-                    ? 'bg-red-100 dark:bg-red-900/40 border-red-200 dark:border-red-800' 
-                    : 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900'
+            {activeAlerts.map((flag, idx) => (
+              <li
+                key={`alert-${idx}`}
+                className={`rounded-md border p-3 text-sm ${
+                  flag.riskLevel === "CRITICAL"
+                    ? "border-red-200 bg-red-100 dark:border-red-800 dark:bg-red-900/40"
+                    : "border-amber-100 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
                 }`}
               >
-                {alert.severity === 'RED' ? (
+                {flag.riskLevel === "CRITICAL" ? (
                   <>
-                    <span className="font-bold text-red-700 dark:text-red-400">{alert.urgent_warning}</span> <br/>
+                    <span className="font-bold text-red-700 dark:text-red-400">
+                      {flag.medicalDirective}
+                    </span>{" "}
+                    <br />
                   </>
                 ) : (
                   <>
-                    <span className="font-semibold text-amber-800 dark:text-amber-400">{alert.advice}</span> <br/>
+                    <span className="font-semibold text-amber-800 dark:text-amber-400">
+                      {flag.flagAdvice}
+                    </span>{" "}
+                    <br />
                   </>
                 )}
-                <span className="text-muted-foreground mt-1 block">Result: {alert.result}</span>
+                <span className="mt-1 block text-muted-foreground">
+                  Logged Value: {flag.measuredResult}
+                </span>
               </li>
             ))}
           </ul>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
