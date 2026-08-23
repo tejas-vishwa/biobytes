@@ -204,6 +204,14 @@ export async function createTablesIfNotExist() {
       console.warn("Table DDL execution note:", err)
     }
   }
+
+  // Attempt to add new columns to existing User table (will fail silently if they already exist)
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "age" INTEGER;`)
+  } catch (err) {}
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "location" TEXT;`)
+  } catch (err) {}
 }
 
 export async function seedDatabase() {

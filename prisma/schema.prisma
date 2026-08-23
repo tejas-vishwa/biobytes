@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -8,10 +9,11 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
+  id            String   @id @default(uuid())
+  email         String   @unique
   passwordHash  String
   name          String?
+<<<<<<< ours
   gender        String?
   age           Int?
   location      String?
@@ -20,107 +22,118 @@ model User {
   subscriptionTier String    @default("FREE") // "FREE" or "QURIX_PLUS"
   paymentStatus    String    @default("NONE") // "NONE", "PENDING_APPROVAL", "ACTIVE"
   createdAt        DateTime  @default(now())
+=======
+  age           Int?
+  location      String?
+  role          String   @default("PATIENT") // PATIENT, DOCTOR, ADMIN, LAB_PARTNER
+  accountStatus String   @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt     DateTime @default(now())
+>>>>>>> theirs
 
   // Relations
-  reports             Report[]       @relation("PatientReports")
+  reports             Report[]             @relation("PatientReports")
   alerts              HealthAlert[]
   accessCodes         DoctorAccessCode[]
   bookings            LabBooking[]
   doctorProfile       DoctorProfile?
-  patientAppointments Appointment[]  @relation("PatientAppointments")
-  doctorAppointments  Appointment[]  @relation("DoctorAppointments")
+  patientAppointments Appointment[]        @relation("PatientAppointments")
+  doctorAppointments  Appointment[]        @relation("DoctorAppointments")
   healthRecords       UserHealthRecord[]
   prescriptions       Prescription[] @relation("PatientPrescriptions")
   scans               MedicalScan[]  @relation("PatientScans")
   activities          ActivityLog[]
+<<<<<<< ours
   medicineReminders   MedicineReminder[] @relation("PatientReminders")
+=======
+  medicationReminders MedicationReminder[]
+>>>>>>> theirs
 }
 
 model DoctorProfile {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  licenseNumber   String
-  specialization  String?
+  id             String  @id @default(uuid())
+  userId         String  @unique
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber  String
+  specialization String?
 }
 
 model Report {
-  id          String   @id @default(uuid())
-  patientId   String
-  patient     User     @relation("PatientReports", fields: [patientId], references: [id], onDelete: Cascade)
-  fileName    String
-  fileUrl     String
-  fileData    String?  // Base64 encoded file content stored directly in Turso
-  fileType    String?  // MIME type (e.g. application/pdf)
-  status      String   @default("UPLOADED") // UPLOADED, PROCESSING, PARSED, FAILED
-  rawText     String?
-  parsedJson  String?
-  aiSummary   String?
-  reportDate  DateTime?
-  labName     String?
-  createdAt   DateTime @default(now())
+  id         String    @id @default(uuid())
+  patientId  String
+  patient    User      @relation("PatientReports", fields: [patientId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileUrl    String
+  fileData   String? // Base64 encoded file content stored directly in Turso
+  fileType   String? // MIME type (e.g. application/pdf)
+  status     String    @default("UPLOADED") // UPLOADED, PROCESSING, PARSED, FAILED
+  rawText    String?
+  parsedJson String?
+  aiSummary  String?
+  reportDate DateTime?
+  labName    String?
+  createdAt  DateTime  @default(now())
 
-  metrics     ExtractedMetric[]
+  metrics      ExtractedMetric[]
   healthRecord UserHealthRecord?
 }
 
 model BiomarkerDefinition {
-  id          String   @id @default(uuid())
-  code        String   @unique // canonical code e.g. HEMOGLOBIN
+  id          String  @id @default(uuid())
+  code        String  @unique // canonical code e.g. HEMOGLOBIN
   displayName String
   unit        String
   refMin      Float?
   refMax      Float?
   category    String?
 
-  metrics     ExtractedMetric[]
+  metrics ExtractedMetric[]
 }
 
 model ExtractedMetric {
-  id              String              @id @default(uuid())
-  reportId        String
-  report          Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  biomarkerId     String
-  biomarker       BiomarkerDefinition @relation(fields: [biomarkerId], references: [id], onDelete: Cascade)
-  value           Float
-  unit            String
-  refMin          Float?
-  refMax          Float?
-  isAbnormal      Boolean             @default(false)
-  createdAt       DateTime            @default(now())
+  id          String              @id @default(uuid())
+  reportId    String
+  report      Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  biomarkerId String
+  biomarker   BiomarkerDefinition @relation(fields: [biomarkerId], references: [id], onDelete: Cascade)
+  value       Float
+  unit        String
+  refMin      Float?
+  refMax      Float?
+  isAbnormal  Boolean             @default(false)
+  createdAt   DateTime            @default(now())
 }
 
 model DoctorAccessCode {
-  id          String   @id @default(uuid())
-  patientId   String
-  patient     User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  code        String   @unique
-  expiresAt   DateTime
-  maxUses     Int      @default(5)
-  usedCount   Int      @default(0)
-  isRevoked   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  patientId String
+  patient   User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  code      String   @unique
+  expiresAt DateTime
+  maxUses   Int      @default(5)
+  usedCount Int      @default(0)
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  usages      AccessCodeUsage[]
+  usages AccessCodeUsage[]
 }
 
 model AccessCodeUsage {
-  id          String           @id @default(uuid())
-  codeId      String
-  code        DoctorAccessCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
-  accessedAt  DateTime         @default(now())
-  ipAddress   String?
+  id         String           @id @default(uuid())
+  codeId     String
+  code       DoctorAccessCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  accessedAt DateTime         @default(now())
+  ipAddress  String?
 }
 
 model HealthAlert {
-  id          String   @id @default(uuid())
-  patientId   String
-  patient     User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  metricId    String?  // Optional reference to ExtractedMetric if we want a hard link
-  severity    String   @default("INFO") // INFO, WARNING, CRITICAL
-  message     String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  patientId String
+  patient   User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  metricId  String? // Optional reference to ExtractedMetric if we want a hard link
+  severity  String   @default("INFO") // INFO, WARNING, CRITICAL
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model LabPartner {
@@ -144,34 +157,78 @@ model LabPartner {
 }
 
 model LabBooking {
-  id          String     @id @default(uuid())
-  patientId   String
-  patient     User       @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  labId       String
-  lab         LabPartner @relation(fields: [labId], references: [id], onDelete: Cascade)
-  status      String     @default("PENDING") // PENDING, CONFIRMED, COMPLETED
-  createdAt   DateTime   @default(now())
+  id        String     @id @default(uuid())
+  patientId String
+  patient   User       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  labId     String
+  lab       LabPartner @relation(fields: [labId], references: [id], onDelete: Cascade)
+  status    String     @default("PENDING") // PENDING, CONFIRMED, COMPLETED
+  createdAt DateTime   @default(now())
 }
 
 model Appointment {
-  id            String    @id @default(uuid())
+  id            String   @id @default(uuid())
   patientId     String
-  patient       User      @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  patient       User     @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
   doctorId      String
-  doctor        User      @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
+  doctor        User     @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
   scheduledTime DateTime
-  status        String    @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED
-  accessCode    String?   // The 6-digit PIN pre-uploaded by patient
-  createdAt     DateTime  @default(now())
+  type          String   @default("OFFLINE") // OFFLINE, ONLINE
+  status        String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED
+  accessCode    String? // The 6-digit PIN pre-uploaded by patient
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  // Telehealth
+  dailyRoomName   String?   @unique
+  dailyRoomUrl    String?
+  callStartedAt   DateTime?
+  callEndedAt     DateTime?
+  callDurationSec Int?
+
+  // AI Consultation
+  transcript   String?
+  aiSummary    String?
+  scribeStatus String? @default("PENDING") // PENDING, PROCESSING, DONE, FAILED
+
+  transcriptSegments  ConsultationTranscriptSegment[]
+  medicationReminders MedicationReminder[]
+}
+
+model ConsultationTranscriptSegment {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  speaker       String // "doctor" | "patient" | "unknown"
+  text          String
+  confidence    Float?
+  startMs       Int?
+  endMs         Int?
+  createdAt     DateTime    @default(now())
+}
+
+model MedicationReminder {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       User        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  drugName      String
+  dosage        String
+  frequency     String
+  duration      String
+  nextDoseAt    DateTime?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
 }
 
 model UserHealthRecord {
-  id                  String   @id @default(uuid())
-  reportId            String   @unique
-  report              Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  patientId           String
-  patient             User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  
+  id        String @id @default(uuid())
+  reportId  String @unique
+  report    Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  patientId String
+  patient   User   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
   // Hardcoded columns for data integrity
   hemoglobin          Float?
   fasting_blood_sugar Float?
@@ -181,8 +238,8 @@ model UserHealthRecord {
   triglycerides       Float?
   vitamin_d           Float?
   vitamin_b12         Float?
-  
-  createdAt           DateTime @default(now())
+
+  createdAt DateTime @default(now())
 }
 
 model ActivityLog {

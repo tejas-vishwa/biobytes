@@ -69,6 +69,7 @@ export async function POST(req: Request) {
         patientId: session.user.id,
         doctorId,
         scheduledTime,
+        type: data.type || "OFFLINE",
         accessCode
       }
     })

@@ -20,9 +20,31 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Missing status" }, { status: 400 })
   }
 
-  const appointment = await prisma.appointment.update({
+  const existingAppt = await prisma.appointment.findUnique({
     where: { id: resolvedParams.id, doctorId: session.user.id },
-    data: { status }
+  })
+
+  if (!existingAppt) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+
+  let updateData: any = { status }
+
+  if (status === "ACCEPTED" && existingAppt.type === "ONLINE" && !existingAppt.dailyRoomName) {
+    const { createDailyRoom } = await import("@/lib/daily")
+    try {
+      const room = await createDailyRoom(existingAppt.id)
+      updateData.dailyRoomName = room.name
+      updateData.dailyRoomUrl = room.url
+    } catch (e) {
+      console.error("Failed to pre-create Daily room:", e)
+      // We don't block the acceptance; the room can be created lazily later
+    }
+  }
+
+  const appointment = await prisma.appointment.update({
+    where: { id: resolvedParams.id },
+    data: updateData
   })
 
   return NextResponse.json({ success: true, appointment })

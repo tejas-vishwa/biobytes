@@ -123,6 +123,21 @@ export default function RegisterPage() {
                 </select>
               </div>
               
+              {/* Terms & Conditions */}
+              <div className="flex items-start space-x-2 pt-2 pb-2">
+                <input 
+                  type="checkbox" 
+                  id="terms" 
+                  name="terms" 
+                  required 
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  disabled={loading}
+                />
+                <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-400">
+                  I agree to the <Link href="/terms" className="text-primary hover:underline">Terms & Conditions</Link>, including the AI Disclaimer and Data Privacy Policy.
+                </label>
+              </div>
+
               {/* Bot Verification: Honeypot (Hidden from real users) */}
               <div className="opacity-0 absolute -z-10 h-0 w-0 overflow-hidden" aria-hidden="true">
                 <label htmlFor="bot_check">Leave this field empty if you are human</label>

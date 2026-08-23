@@ -45,7 +45,7 @@ export function createDbClient(): PrismaClient {
   ;(libsql as any).authToken = tursoToken
 
   const adapter = new PrismaLibSQL(libsql as any)
-  const instance = new PrismaClient({ adapter })
+  const instance = new PrismaClient({ adapter } as any)
 
   if (process.env.NODE_ENV !== 'production') {
     globalForPrisma.prisma = instance

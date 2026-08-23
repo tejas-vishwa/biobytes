@@ -22,7 +22,8 @@ export default function BookingPage() {
     doctorId: doctorId,
     date: new Date().toISOString().split('T')[0], // Default to today
     time: "",
-    preUploadData: false
+    preUploadData: false,
+    type: "OFFLINE"
   })
 
   useEffect(() => {
@@ -137,6 +138,34 @@ export default function BookingPage() {
                   <option value="16:00">04:00 PM</option>
                   <option value="17:00">05:00 PM</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <label className="text-sm font-medium">Consultation Type</label>
+              <div className="flex space-x-6 pt-1">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="OFFLINE"
+                    checked={form.type === "OFFLINE"}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                    className="h-4 w-4 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm">In-clinic</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="type"
+                    value="ONLINE"
+                    checked={form.type === "ONLINE"}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                    className="h-4 w-4 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm">Video Consultation</span>
+                </label>
               </div>
             </div>
 

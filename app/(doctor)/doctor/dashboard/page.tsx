@@ -112,7 +112,12 @@ export default function DoctorDashboardPage() {
                           <User className="h-5 w-5 text-emerald-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-lg">{appt.patient?.name}</p>
+                          <p className="font-semibold text-lg flex items-center">
+                            {appt.patient?.name}
+                            {appt.type === "ONLINE" && (
+                              <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">Video</span>
+                            )}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             Status: 
                             <span className={`ml-1 font-medium ${appt.status === 'ACCEPTED' ? 'text-primary' : 'text-amber-500'}`}>
@@ -130,9 +135,20 @@ export default function DoctorDashboardPage() {
                           </>
                         )}
                         {appt.status === "ACCEPTED" && (
-                          <Button size="sm" variant="default" className="h-9 w-full sm:w-auto" onClick={() => handleUpdateStatus(appt.id, "CHECKED")}>
-                            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Checked
-                          </Button>
+                          <div className="flex space-x-2 w-full sm:w-auto">
+                            <Button size="sm" variant="default" className="h-9 flex-1" onClick={() => handleUpdateStatus(appt.id, "CHECKED")}>
+                              <CheckCircle2 className="mr-2 h-4 w-4" /> Check
+                            </Button>
+                            {appt.type === "ONLINE" && (
+                              <Button 
+                                size="sm" 
+                                className="h-9 flex-1 bg-blue-600 hover:bg-blue-700 text-white" 
+                                onClick={() => window.location.href = `/doctor/consultation/${appt.id}`}
+                              >
+                                Start Video
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

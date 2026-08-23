@@ -49,7 +49,8 @@ export default function PatientAppointmentsPage() {
     doctorId: "",
     date: "",
     time: "",
-    preUploadData: false
+    preUploadData: false,
+    type: "OFFLINE"
   })
 
   const fetchData = async () => {
@@ -92,7 +93,7 @@ export default function PatientAppointmentsPage() {
         })
       })
       if (res.ok) {
-        setForm({ doctorId: "", date: "", time: "", preUploadData: false })
+        setForm({ doctorId: "", date: "", time: "", preUploadData: false, type: "OFFLINE" })
         fetchData()
       } else {
         const errorData = await res.json()
@@ -176,6 +177,34 @@ export default function PatientAppointmentsPage() {
                 </div>
               </div>
 
+              <div className="space-y-2 pt-2">
+                <label className="text-sm font-medium">Consultation Type</label>
+                <div className="flex space-x-6 pt-1">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="type"
+                      value="OFFLINE"
+                      checked={form.type === "OFFLINE"}
+                      onChange={(e) => setForm({ ...form, type: e.target.value })}
+                      className="h-4 w-4 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">In-clinic</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="type"
+                      value="ONLINE"
+                      checked={form.type === "ONLINE"}
+                      onChange={(e) => setForm({ ...form, type: e.target.value })}
+                      className="h-4 w-4 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">Video Consultation</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="flex items-center space-x-2 pt-2">
                 <input 
                   type="checkbox" 
@@ -219,7 +248,12 @@ export default function PatientAppointmentsPage() {
                           <User className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-sm">{appt.doctor?.name}</p>
+                          <p className="font-medium text-sm flex items-center">
+                            {appt.doctor?.name}
+                            {appt.type === "ONLINE" && (
+                              <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">Video</span>
+                            )}
+                          </p>
                           <p className="text-xs text-muted-foreground">Status: <span className="text-primary font-medium">{appt.status}</span></p>
                         </div>
                       </div>
@@ -246,6 +280,17 @@ export default function PatientAppointmentsPage() {
                       <div className="mt-2 bg-emerald-50 text-emerald-700 text-xs px-3 py-2 rounded flex items-center border border-emerald-100">
                         <CheckCircle2 className="h-3 w-3 mr-2" />
                         Shared E-Health PIN: <strong className="ml-1 tracking-widest">{appt.accessCode}</strong>
+                      </div>
+                    )}
+                    
+                    {appt.type === "ONLINE" && appt.status === "ACCEPTED" && (
+                      <div className="mt-2 pt-2 border-t">
+                        <Button 
+                          className="w-full bg-blue-600 hover:bg-blue-700" 
+                          onClick={() => window.location.href = `/patient/consultation/${appt.id}`}
+                        >
+                          Join Video Call
+                        </Button>
                       </div>
                     )}
                   </div>
