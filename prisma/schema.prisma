@@ -13,7 +13,6 @@ model User {
   email         String   @unique
   passwordHash  String
   name          String?
-<<<<<<< ours
   gender        String?
   age           Int?
   location      String?
@@ -22,13 +21,6 @@ model User {
   subscriptionTier String    @default("FREE") // "FREE" or "QURIX_PLUS"
   paymentStatus    String    @default("NONE") // "NONE", "PENDING_APPROVAL", "ACTIVE"
   createdAt        DateTime  @default(now())
-=======
-  age           Int?
-  location      String?
-  role          String   @default("PATIENT") // PATIENT, DOCTOR, ADMIN, LAB_PARTNER
-  accountStatus String   @default("ACTIVE") // ACTIVE, SUSPENDED
-  createdAt     DateTime @default(now())
->>>>>>> theirs
 
   // Relations
   reports             Report[]             @relation("PatientReports")
@@ -42,11 +34,8 @@ model User {
   prescriptions       Prescription[] @relation("PatientPrescriptions")
   scans               MedicalScan[]  @relation("PatientScans")
   activities          ActivityLog[]
-<<<<<<< ours
   medicineReminders   MedicineReminder[] @relation("PatientReminders")
-=======
   medicationReminders MedicationReminder[]
->>>>>>> theirs
 }
 
 model DoctorProfile {
