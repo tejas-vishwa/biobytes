@@ -5,12 +5,21 @@ import { signIn, getSession } from "next-auth/react"
 import { BackButton } from "@/components/BackButton"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { User, Stethoscope, ShieldCheck } from "lucide-react"
+import { User, Stethoscope, ShieldCheck, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 import { QurixLogo } from "@/components/QurixLogo"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
+interface DemoAccount {
+  name: string
+  email: string
+  role: string
+  roleUrl: string
+  color?: string
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,6 +28,14 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<"login" | "demo">("login")
+
+  // Demo password protection states
+  const [selectedDemoUser, setSelectedDemoUser] = useState<DemoAccount | null>(null)
+  const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false)
+  const [demoPassword, setDemoPassword] = useState("")
+  const [demoError, setDemoError] = useState("")
+  const [showDemoPassword, setShowDemoPassword] = useState(false)
+  const [verifyingDemo, setVerifyingDemo] = useState(false)
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,13 +63,29 @@ export default function LoginPage() {
     }
   }
 
-  const demoLogin = async (emailToLogin: string, password: string, roleUrl: string) => {
-    setLoading(true)
-    setError("")
+  const openDemoModal = (account: DemoAccount) => {
+    setSelectedDemoUser(account)
+    setDemoPassword("")
+    setDemoError("")
+    setShowDemoPassword(false)
+    setIsDemoDialogOpen(true)
+  }
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedDemoUser) return
+
+    if (!demoPassword.trim()) {
+      setDemoError("Please enter the password.")
+      return
+    }
+
+    setVerifyingDemo(true)
+    setDemoError("")
 
     let res = await signIn("credentials", {
-      email: emailToLogin,
-      password,
+      email: selectedDemoUser.email,
+      password: demoPassword,
       redirect: false,
     })
 
@@ -61,8 +94,8 @@ export default function LoginPage() {
       try {
         await fetch("/api/setup-db")
         res = await signIn("credentials", {
-          email: emailToLogin,
-          password,
+          email: selectedDemoUser.email,
+          password: demoPassword,
           redirect: false,
         })
       } catch (e) {
@@ -71,24 +104,20 @@ export default function LoginPage() {
     }
 
     if (res?.error) {
-      console.error("Login attempt error:", res.error)
-      if (res.error === "CredentialsSignin") {
-        setError("Invalid demo credentials. Please try again.")
-      } else {
-        setError(`Login error (${res.error}). Please verify environment configuration.`)
-      }
-      setLoading(false)
+      setDemoError("Incorrect password. Please enter the valid account password.")
+      setVerifyingDemo(false)
     } else {
-      router.push(roleUrl)
+      setIsDemoDialogOpen(false)
+      router.push(selectedDemoUser.roleUrl)
       router.refresh()
     }
   }
 
-  const patients = [
-    { name: "Priya Sharma", email: "priya@demo.com", color: "rose" },
-    { name: "Sankalp Verma", email: "sankalp@demo.com", color: "blue" },
-    { name: "Utkarsh Singh", email: "utkarsh@demo.com", color: "indigo" },
-    { name: "Tejas Vishwakarma", email: "tejas@demo.com", color: "cyan" },
+  const patients: DemoAccount[] = [
+    { name: "Priya Sharma", email: "priya@demo.com", role: "Patient", roleUrl: "/patient/dashboard", color: "rose" },
+    { name: "Sankalp Verma", email: "sankalp@demo.com", role: "Patient", roleUrl: "/patient/dashboard", color: "blue" },
+    { name: "Utkarsh Singh", email: "utkarsh@demo.com", role: "Patient", roleUrl: "/patient/dashboard", color: "indigo" },
+    { name: "Tejas Vishwakarma", email: "tejas@demo.com", role: "Patient", roleUrl: "/patient/dashboard", color: "cyan" },
   ]
 
   const colorMap: Record<string, string> = {
@@ -168,8 +197,13 @@ export default function LoginPage() {
                 <div className="space-y-6">
                   {/* Patient Demo Accounts */}
                   <div className="w-full space-y-2">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      <User className="h-3 w-3" /> Patients (password: demo1234)
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" /> Patients
+                      </span>
+                      <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
+                        <Lock className="h-3 w-3" /> Password Protected
+                      </span>
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {patients.map((p) => (
@@ -177,11 +211,12 @@ export default function LoginPage() {
                           key={p.email}
                           type="button"
                           variant="outline"
-                          className={`text-xs py-2 h-auto ${colorMap[p.color]}`}
-                          onClick={() => demoLogin(p.email, "demo1234", "/patient/dashboard")}
-                          disabled={loading}
+                          className={`text-xs py-2 h-auto flex items-center justify-between px-3 ${p.color ? colorMap[p.color] : ""}`}
+                          onClick={() => openDemoModal(p)}
+                          disabled={loading || verifyingDemo}
                         >
-                          {p.name}
+                          <span className="truncate">{p.name}</span>
+                          <Lock className="h-3 w-3 opacity-60 ml-1 shrink-0" />
                         </Button>
                       ))}
                     </div>
@@ -189,33 +224,55 @@ export default function LoginPage() {
 
                   {/* Doctor Demo Account */}
                   <div className="w-full space-y-2">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      <Stethoscope className="h-3 w-3" /> Doctor (password: demo1234)
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Stethoscope className="h-3.5 w-3.5" /> Doctor
+                      </span>
+                      <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
+                        <Lock className="h-3 w-3" /> Password Protected
+                      </span>
                     </p>
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
-                      onClick={() => demoLogin("doctor@demo.com", "demo1234", "/doctor/dashboard")}
-                      disabled={loading}
+                      className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 flex items-center justify-between px-3"
+                      onClick={() => openDemoModal({
+                        name: "Dr. Rahul Verma",
+                        email: "doctor@demo.com",
+                        role: "Doctor",
+                        roleUrl: "/doctor/dashboard"
+                      })}
+                      disabled={loading || verifyingDemo}
                     >
-                      Dr. Rahul Verma
+                      <span>Dr. Rahul Verma</span>
+                      <Lock className="h-3 w-3 opacity-60 shrink-0" />
                     </Button>
                   </div>
 
                   {/* Admin Demo Account */}
                   <div className="w-full space-y-2">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Admin (password: demo1234)
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="h-3.5 w-3.5" /> Admin
+                      </span>
+                      <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
+                        <Lock className="h-3 w-3" /> Password Protected
+                      </span>
                     </p>
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800"
-                      onClick={() => demoLogin("admin@teamqurix.com", "demo1234", "/admin")}
-                      disabled={loading}
+                      className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800 flex items-center justify-between px-3"
+                      onClick={() => openDemoModal({
+                        name: "Super Admin",
+                        email: "admin@teamqurix.com",
+                        role: "Administrator",
+                        roleUrl: "/admin"
+                      })}
+                      disabled={loading || verifyingDemo}
                     >
-                      Super Admin
+                      <span>Super Admin</span>
+                      <Lock className="h-3 w-3 opacity-60 shrink-0" />
                     </Button>
                   </div>
                 </div>
@@ -239,6 +296,87 @@ export default function LoginPage() {
           </Link>
         </div>
       </div>
+
+      {/* Password Protection Dialog for Demo Accounts */}
+      <Dialog open={isDemoDialogOpen} onOpenChange={setIsDemoDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          {selectedDemoUser && (
+            <form onSubmit={handleDemoSubmit} className="space-y-4">
+              <DialogHeader className="text-left space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-full bg-primary/10 text-primary">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <DialogTitle>Demo Account Verification</DialogTitle>
+                </div>
+                <DialogDescription>
+                  Enter the password to sign in as <strong className="text-foreground">{selectedDemoUser.name}</strong> ({selectedDemoUser.email}).
+                </DialogDescription>
+              </DialogHeader>
+
+              {demoError && (
+                <div className="text-xs text-destructive font-medium rounded-md bg-destructive/10 p-2.5">
+                  {demoError}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground" htmlFor="demo-password">
+                  Account Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="demo-password"
+                    type={showDemoPassword ? "text" : "password"}
+                    placeholder="Enter password"
+                    value={demoPassword}
+                    onChange={(e) => {
+                      setDemoPassword(e.target.value)
+                      if (demoError) setDemoError("")
+                    }}
+                    autoFocus
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDemoPassword(!showDemoPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                    tabIndex={-1}
+                  >
+                    {showDemoPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDemoDialogOpen(false)}
+                  disabled={verifyingDemo}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={verifyingDemo}
+                  className="min-w-[120px]"
+                >
+                  {verifyingDemo ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
+                    </>
+                  ) : (
+                    "Unlock & Sign in"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+
