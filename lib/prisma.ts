@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
+import { createClient } from '@libsql/client/web'
 
 const DEFAULT_TURSO_URL = "libsql://database-blue-saddle-vercel-icfg-fqc2u6suiaf6lzcnjepopdwg.aws-us-east-1.turso.io"
 const DEFAULT_TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODYxOTc1OTIsImlkIjoiMDE5ZmUxYWMtNDcwMS03ODU2LWJjMmEtODhjNTZlZWM0NTMyIiwia2lkIjoiZkJ0VEtnN1dEZ0ZZOWZsblhPMUc0Ml9vdEV1UlhUZnRWWl8wdW5UVnk0NCIsInJpZCI6ImM2YWUyMmUzLTY2MTUtNGYwZi04MDFhLWQyYWY4NGU5ODVlMSJ9.zO5vLdRzmnRcAW9pBrM4mhyXCRPf8QtHwm3eYwv7iCZGl26uegAH1no10dPAG12V7DRAPGVzz9urcvHCQGRoCQ"
