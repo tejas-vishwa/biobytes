@@ -48,7 +48,11 @@ export default function LoginPage() {
     })
 
     if (res?.error) {
-      setError("Invalid email or password")
+      if (res.error === "CredentialsSignin") {
+        setError("Invalid email or password")
+      } else {
+        setError(res.error)
+      }
       setLoading(false)
     } else {
       const session = await getSession()

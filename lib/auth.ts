@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { seedDatabase } from "@/lib/seed-db"
+import { checkAuthLimit, recordAuthFailure, recordAuthSuccess, getClientIp } from "@/lib/rate-limit"
 
 if (!process.env.NEXTAUTH_SECRET) {
   process.env.NEXTAUTH_SECRET = "qurix-production-secret-2026"
@@ -28,12 +29,26 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email", placeholder: "m@example.com" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
-        const emailLower = credentials.email.toLowerCase()
+        const emailLower = credentials.email.toLowerCase().trim()
+        const clientIp = req ? getClientIp(req as any) : "127.0.0.1"
+
+        // 1. Check Rate Limiting & Exponential Backoff for this account / IP
+        const authRateLimit = checkAuthLimit(clientIp, emailLower)
+        if (!authRateLimit.allowed) {
+          if (authRateLimit.reason === "ACCOUNT_BACKOFF_ACTIVE") {
+            throw new Error(
+              `Too many failed login attempts for this account. Please wait ${authRateLimit.retryAfter}s before trying again.`
+            )
+          }
+          throw new Error(
+            `Rate limit exceeded for authentication requests. Please try again in ${authRateLimit.retryAfter}s.`
+          )
+        }
 
         try {
           // Check if table exists or user exists
@@ -52,6 +67,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (!user) {
+            recordAuthFailure(clientIp, emailLower)
             await prisma.activityLog.create({
               data: { action: "LOGIN_FAILED", details: `Failed login attempt for ${credentials.email}` }
             }).catch(() => {})
@@ -65,11 +81,21 @@ export const authOptions: NextAuthOptions = {
           const isPasswordValid = await compare(credentials.password, user.passwordHash)
 
           if (!isPasswordValid) {
+            const backoffInfo = recordAuthFailure(clientIp, emailLower)
             await prisma.activityLog.create({
               data: { action: "LOGIN_FAILED", details: `Invalid password for ${user.email}`, userId: user.id }
             }).catch(() => {})
+
+            if (backoffInfo.retryAfter > 0) {
+              throw new Error(
+                `Too many failed attempts. Temporary exponential backoff applied: wait ${backoffInfo.retryAfter}s before retry.`
+              )
+            }
             return null
           }
+
+          // Successful authentication: Reset consecutive failures
+          recordAuthSuccess(clientIp, emailLower)
 
           await prisma.activityLog.create({
             data: { action: "LOGIN_SUCCESS", details: `User logged in: ${user.email}`, userId: user.id }
@@ -84,7 +110,12 @@ export const authOptions: NextAuthOptions = {
             paymentStatus: user.paymentStatus
           }
         } catch (error: any) {
-          if (error.message === "Your account has been suspended.") {
+          if (
+            error.message === "Your account has been suspended." ||
+            error.message?.includes("failed login attempts") ||
+            error.message?.includes("Rate limit exceeded") ||
+            error.message?.includes("exponential backoff")
+          ) {
             throw error
           }
           console.error("Auth error:", error)

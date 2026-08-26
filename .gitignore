@@ -41,6 +41,12 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+
+# IDE & scratch
+.vs/
+.vscode/
+scratch/
 
 # vercel
 .vercel
