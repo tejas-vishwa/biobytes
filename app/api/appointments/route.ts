@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, appointment })
   } catch (error: any) {
     console.error("Booking API Error:", error)
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to book appointment. Please try again." }, { status: 500 })
   }
 }
 

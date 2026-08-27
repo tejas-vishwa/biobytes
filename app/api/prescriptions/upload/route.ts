@@ -90,6 +90,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("Error uploading prescription:", error)
-    return NextResponse.json({ error: error.message || "Failed to process prescription" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to process prescription. Please try again." }, { status: 500 })
   }
 }

@@ -47,6 +47,6 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: "Report permanently deleted from database." })
   } catch (error: any) {
     console.error("Delete report error:", error)
-    return NextResponse.json({ error: error.message || "Failed to delete report" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to delete report. Please try again." }, { status: 500 })
   }
 }

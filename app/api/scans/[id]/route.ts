@@ -36,6 +36,6 @@ export async function DELETE(
     return NextResponse.json({ success: true, id })
   } catch (error: any) {
     console.error("Error deleting scan:", error)
-    return NextResponse.json({ error: error.message || "Failed to delete scan" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to delete scan. Please try again." }, { status: 500 })
   }
 }

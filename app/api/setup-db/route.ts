@@ -17,6 +17,7 @@ export async function GET() {
       }
     })
   } else {
-    return NextResponse.json({ success: false, error: result.error }, { status: 500 })
+    console.error("Database setup failed:", result.error)
+    return NextResponse.json({ success: false, error: "Database setup failed. Please check server logs." }, { status: 500 })
   }
 }

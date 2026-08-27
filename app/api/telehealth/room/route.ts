@@ -70,7 +70,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Error generating Daily room/token:", error)
     return NextResponse.json(
-      { error: "Internal Server Error", details: error.message },
+      { error: "Failed to create or join consultation room. Please try again." },
       { status: 500 }
     )
   }

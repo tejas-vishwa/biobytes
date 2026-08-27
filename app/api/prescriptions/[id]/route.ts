@@ -36,6 +36,6 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: "Prescription permanently deleted." })
   } catch (error: any) {
     console.error("Delete prescription error:", error)
-    return NextResponse.json({ error: error.message || "Failed to delete prescription" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to delete prescription. Please try again." }, { status: 500 })
   }
 }

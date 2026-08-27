@@ -40,6 +40,6 @@ export async function GET(req: Request) {
     return NextResponse.json(formatted)
   } catch (error: any) {
     console.error("Error fetching prescriptions:", error)
-    return NextResponse.json({ error: error.message || "Failed to fetch prescriptions" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch prescriptions. Please try again." }, { status: 500 })
   }
 }

@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Error joining telehealth call:", error)
     return NextResponse.json(
-      { error: "Internal Server Error", details: error.message },
+      { error: "Failed to join telehealth call. Please try again." },
       { status: 500 }
     )
   }
