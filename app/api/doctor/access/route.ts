@@ -7,6 +7,7 @@ import {
   recordAuthSuccess,
   createRateLimitResponse,
 } from "@/lib/rate-limit"
+import { DoctorAccessCodeVerifySchema, validateSchema } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -14,10 +15,24 @@ export async function POST(req: Request) {
   const clientIp = getClientIp(req)
 
   try {
-    const { code } = await req.json()
+    const rawBody = await req.json().catch(() => null)
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
+    }
 
-    // 1. Check Rate Limiting on IP and attempt backoff on pin verification
-    const accountIdentifier = code ? `doctor-access:${code}` : undefined
+    // 1. Strict Schema Validation (exact 6 characters, alphanumeric)
+    const validation = validateSchema(DoctorAccessCodeVerifySchema, rawBody)
+    if (!validation.success) {
+      if (typeof rawBody.code === "string") {
+        recordAuthFailure(clientIp, `doctor-access:${rawBody.code.slice(0, 10)}`)
+      }
+      return validation.response
+    }
+
+    const { code } = validation.data
+
+    // 2. Check Rate Limiting on IP and attempt backoff on pin verification
+    const accountIdentifier = `doctor-access:${code}`
     const rateLimitResult = checkAuthLimit(clientIp, accountIdentifier)
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(
@@ -29,17 +44,13 @@ export async function POST(req: Request) {
       )
     }
 
-    if (!code) {
-      return NextResponse.json({ error: "Code is required" }, { status: 400 })
-    }
-
     const accessCode = await prisma.doctorAccessCode.findUnique({
-      where: { code }
+      where: { code },
     })
 
     if (!accessCode) {
       recordAuthFailure(clientIp, accountIdentifier)
-      return NextResponse.json({ error: "Invalid code" }, { status: 404 })
+      return NextResponse.json({ error: "Invalid access code" }, { status: 404 })
     }
 
     if (accessCode.isRevoked || accessCode.expiresAt < new Date() || accessCode.usedCount >= accessCode.maxUses) {
@@ -54,13 +65,13 @@ export async function POST(req: Request) {
     await prisma.accessCodeUsage.create({
       data: {
         codeId: accessCode.id,
-        ipAddress: clientIp
-      }
+        ipAddress: clientIp,
+      },
     })
 
     await prisma.doctorAccessCode.update({
       where: { id: accessCode.id },
-      data: { usedCount: { increment: 1 } }
+      data: { usedCount: { increment: 1 } },
     })
 
     // Return the code itself as the sessionId for the URL

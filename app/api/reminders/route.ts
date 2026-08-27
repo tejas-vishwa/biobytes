@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { CreateReminderSchema, DeleteReminderQuerySchema, validateSchema } from "@/lib/validations"
 
 // Get all reminders for a user
 export async function GET(request: Request) {
@@ -15,8 +16,8 @@ export async function GET(request: Request) {
 
   try {
     const whereClause: any = { patientId: session.user.id }
-    if (prescriptionId) {
-      whereClause.prescriptionId = prescriptionId
+    if (prescriptionId && typeof prescriptionId === "string" && prescriptionId.trim().length > 0) {
+      whereClause.prescriptionId = prescriptionId.trim()
     }
 
     const reminders = await prisma.medicineReminder.findMany({
@@ -39,12 +40,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const data = await request.json()
-    const { prescriptionId, medicineName, reminderTime } = data
-
-    if (!medicineName || !reminderTime) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    const rawData = await request.json().catch(() => null)
+    if (!rawData || typeof rawData !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
     }
+
+    // 1. Strict Schema Validation
+    const validation = validateSchema(CreateReminderSchema, rawData)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const { prescriptionId, medicineName, reminderTime } = validation.data
 
     const newReminder = await prisma.medicineReminder.create({
       data: {
@@ -71,11 +78,15 @@ export async function DELETE(request: Request) {
   }
 
   const { searchParams } = new URL(request.url)
-  const id = searchParams.get('id')
+  const rawId = searchParams.get('id')
 
-  if (!id) {
-    return NextResponse.json({ error: "Reminder ID required" }, { status: 400 })
+  // 1. Strict Schema Validation on Query Param
+  const validation = validateSchema(DeleteReminderQuerySchema, { id: rawId })
+  if (!validation.success) {
+    return validation.response
   }
+
+  const { id } = validation.data
 
   try {
     // Check ownership

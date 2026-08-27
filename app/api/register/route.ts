@@ -9,6 +9,7 @@ import {
   recordAuthSuccess,
   createRateLimitResponse,
 } from "@/lib/rate-limit"
+import { RegisterSchema, validateSchema } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -16,10 +17,24 @@ export async function POST(req: Request) {
   const clientIp = getClientIp(req)
 
   try {
-    const { name, email, password, role, botCheck, mathAnswer, num1, num2 } = await req.json()
-    const normalizedEmail = email ? email.toLowerCase().trim() : undefined
+    const rawBody = await req.json().catch(() => null)
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
+    }
 
-    // 1. Check Rate Limiting & Account Backoff
+    // 1. Strict Schema Validation (type, length, format, rejection of extra/malformed properties)
+    const validation = validateSchema(RegisterSchema, rawBody)
+    if (!validation.success) {
+      if (typeof rawBody.email === "string") {
+        recordAuthFailure(clientIp, rawBody.email)
+      }
+      return validation.response
+    }
+
+    const { name, email, password, role, botCheck, mathAnswer, num1, num2 } = validation.data
+    const normalizedEmail = email
+
+    // 2. Check Rate Limiting & Account Backoff
     const rateLimitResult = checkAuthLimit(clientIp, normalizedEmail)
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(
@@ -33,24 +48,19 @@ export async function POST(req: Request) {
       )
     }
 
-    if (!name || !email || !password) {
-      if (normalizedEmail) recordAuthFailure(clientIp, normalizedEmail)
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
-
-    // Bot Verification: Honeypot Check
+    // 3. Bot Verification: Honeypot Check
     if (botCheck) {
       recordAuthFailure(clientIp, normalizedEmail)
       return NextResponse.json({ error: "Bot activity detected. Registration blocked." }, { status: 403 })
     }
 
-    // Bot Verification: Math Challenge Check
-    if (typeof mathAnswer !== "number" || typeof num1 !== "number" || typeof num2 !== "number" || mathAnswer !== num1 + num2) {
+    // 4. Bot Verification: Math Challenge Check
+    if (mathAnswer !== num1 + num2) {
       recordAuthFailure(clientIp, normalizedEmail)
       return NextResponse.json({ error: "Security challenge failed. Incorrect math answer." }, { status: 403 })
     }
 
-    // Check if user already exists
+    // 5. Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     }).catch(async () => {
@@ -63,10 +73,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
     }
 
-    // Hash password
+    // 6. Hash password & Create user
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         name,
@@ -79,7 +88,10 @@ export async function POST(req: Request) {
     // Reset failed attempts on success
     recordAuthSuccess(clientIp, normalizedEmail)
 
-    return NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name, role: user.role } })
+    return NextResponse.json({
+      success: true,
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    })
   } catch (error: any) {
     console.error("Registration error:", error)
     return NextResponse.json({ error: "Something went wrong during registration" }, { status: 500 })

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { extractPrescriptionData, sanitizeMedications } from "@/lib/gemini-ocr"
+import { validateUploadedFile, ALLOWED_DOCUMENT_MIME_TYPES } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -13,12 +14,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const formData = await req.formData()
-    const file = formData.get("file") as File
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    const formData = await req.formData().catch(() => null)
+    if (!formData) {
+      return NextResponse.json({ error: "Invalid form data" }, { status: 400 })
     }
 
+    const rawFile = formData.get("file")
+    const fileValidation = validateUploadedFile(rawFile, ALLOWED_DOCUMENT_MIME_TYPES)
+    if (!fileValidation.valid) {
+      return fileValidation.response
+    }
+
+    const file = fileValidation.file
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     const fileBase64 = buffer.toString("base64")

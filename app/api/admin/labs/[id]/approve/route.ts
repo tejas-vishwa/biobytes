@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { AdminLabApprovalParamsSchema, validateSchema } from "@/lib/validations"
 const nodemailer = require("nodemailer")
 
 export async function PUT(
@@ -7,7 +8,13 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: labId } = await params
+    const resolvedParams = await params
+    const validation = validateSchema(AdminLabApprovalParamsSchema, resolvedParams)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const { id: labId } = validation.data
 
     // Update the lab's status
     const updatedLab = await prisma.labPartner.update({

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { UserProfileUpdateSchema, validateSchema } from "@/lib/validations"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -41,15 +42,25 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const data = await request.json()
-    const { name, gender, age, location } = data
+    const rawData = await request.json().catch(() => null)
+    if (!rawData || typeof rawData !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
+    }
+
+    // 1. Strict Schema Validation
+    const validation = validateSchema(UserProfileUpdateSchema, rawData)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const { name, gender, age, location } = validation.data
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         name: name !== undefined ? name : undefined,
         gender: gender !== undefined ? gender : undefined,
-        age: age !== undefined ? (age === null || age === "" ? null : parseInt(age, 10)) : undefined,
+        age: age !== undefined ? age : undefined,
         location: location !== undefined ? location : undefined,
       },
     })

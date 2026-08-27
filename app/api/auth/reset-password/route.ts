@@ -8,6 +8,7 @@ import {
   recordAuthSuccess,
   createRateLimitResponse,
 } from "@/lib/rate-limit"
+import { PasswordResetSchema, validateSchema } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -15,16 +16,24 @@ export async function POST(req: Request) {
   const clientIp = getClientIp(req)
 
   try {
-    const body = await req.json()
-    const { email, action, newPassword } = body
-
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 })
+    const rawBody = await req.json().catch(() => null)
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
     }
 
-    const normalizedEmail = email.toLowerCase().trim()
+    // 1. Strict Schema Validation
+    const validation = validateSchema(PasswordResetSchema, rawBody)
+    if (!validation.success) {
+      if (typeof rawBody.email === "string") {
+        recordAuthFailure(clientIp, rawBody.email)
+      }
+      return validation.response
+    }
 
-    // 1. Rate Limit & Exponential Backoff Check (Strict per-IP and per-account)
+    const { email, action, newPassword } = validation.data
+    const normalizedEmail = email
+
+    // 2. Rate Limit & Exponential Backoff Check (Strict per-IP and per-account)
     const rateLimitResult = checkAuthLimit(clientIp, normalizedEmail)
     if (!rateLimitResult.allowed) {
       return createRateLimitResponse(
@@ -42,14 +51,14 @@ export async function POST(req: Request) {
       where: { email: normalizedEmail },
     })
 
-    if (action === "RESET" && newPassword) {
+    if (action === "RESET") {
+      if (!newPassword) {
+        return NextResponse.json({ error: "newPassword is required for RESET action" }, { status: 400 })
+      }
+
       if (!user) {
         recordAuthFailure(clientIp, normalizedEmail)
         return NextResponse.json({ error: "Invalid password reset request" }, { status: 404 })
-      }
-
-      if (newPassword.length < 6) {
-        return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
       }
 
       const hashedPassword = await bcrypt.hash(newPassword, 10)

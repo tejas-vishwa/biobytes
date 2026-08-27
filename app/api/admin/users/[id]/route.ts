@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { AdminUserActionSchema, validateSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic"
 
@@ -15,13 +16,23 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { action } = body;
     const { id } = await params;
-
-    if (!["SUSPEND", "ACTIVATE", "RESET_PASSWORD"].includes(action)) {
-      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    if (!id || typeof id !== "string" || id.trim().length === 0) {
+      return NextResponse.json({ error: "Invalid target user ID" }, { status: 400 });
     }
+
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 });
+    }
+
+    // 1. Strict Schema Validation
+    const validation = validateSchema(AdminUserActionSchema, rawBody);
+    if (!validation.success) {
+      return validation.response;
+    }
+
+    const { action } = validation.data;
 
     let updatedUser;
 

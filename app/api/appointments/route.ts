@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { BookAppointmentSchema, validateSchema } from "@/lib/validations"
+
 export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
@@ -10,21 +12,31 @@ export async function POST(req: Request) {
     return new Response("Unauthorized", { status: 401 })
   }
 
-  const data = await req.json()
-  const { doctorId, date, time, scheduledTime: clientScheduledTime, preUploadData } = data
-
-  if (!doctorId || (!clientScheduledTime && (!date || !time))) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-  }
-
-  let scheduledTime: Date
-  if (clientScheduledTime) {
-    scheduledTime = new Date(clientScheduledTime)
-  } else {
-    scheduledTime = new Date(`${date}T${time}`)
-  }
-
   try {
+    const rawData = await req.json().catch(() => null)
+    if (!rawData || typeof rawData !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
+    }
+
+    // 1. Strict Schema Validation
+    const validation = validateSchema(BookAppointmentSchema, rawData)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const { doctorId, date, time, scheduledTime: clientScheduledTime, type, preUploadData } = validation.data
+
+    let scheduledTime: Date
+    if (clientScheduledTime) {
+      scheduledTime = new Date(clientScheduledTime)
+    } else {
+      scheduledTime = new Date(`${date}T${time}`)
+    }
+
+    if (isNaN(scheduledTime.getTime())) {
+      return NextResponse.json({ error: "Invalid scheduled datetime" }, { status: 400 })
+    }
+
     // Enforce max 10 patients per hourly slot per doctor per day
     const existingApptsCount = await prisma.appointment.count({
       where: {
@@ -69,7 +81,7 @@ export async function POST(req: Request) {
         patientId: session.user.id,
         doctorId,
         scheduledTime,
-        type: data.type || "OFFLINE",
+        type: type || "OFFLINE",
         accessCode
       }
     })

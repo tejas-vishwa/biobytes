@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { extractMedicalData } from "@/lib/gemini-ocr"
 import { BIOMARKERS_100 } from "@/lib/biomarkers100"
+import { validateUploadedFile, ALLOWED_DOCUMENT_MIME_TYPES } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -14,12 +15,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const formData = await req.formData()
-    const file = formData.get("file") as File
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 })
+    const formData = await req.formData().catch(() => null)
+    if (!formData) {
+      return NextResponse.json({ error: "Invalid form data" }, { status: 400 })
     }
 
+    const rawFile = formData.get("file")
+    const fileValidation = validateUploadedFile(rawFile, ALLOWED_DOCUMENT_MIME_TYPES)
+    if (!fileValidation.valid) {
+      return fileValidation.response
+    }
+
+    const file = fileValidation.file
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     const base64Data = buffer.toString("base64")

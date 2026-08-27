@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createDailyRoom, createDailyToken } from "@/lib/daily"
+import { TelehealthRoomSchema, validateSchema } from "@/lib/validations"
 
 export async function POST(req: Request) {
   try {
@@ -11,10 +12,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { appointmentId } = await req.json()
-    if (!appointmentId) {
-      return NextResponse.json({ error: "Missing appointmentId" }, { status: 400 })
+    const rawData = await req.json().catch(() => null)
+    if (!rawData || typeof rawData !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
     }
+
+    // 1. Strict Schema Validation
+    const validation = validateSchema(TelehealthRoomSchema, rawData)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const { appointmentId } = validation.data
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },

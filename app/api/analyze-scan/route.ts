@@ -115,6 +115,8 @@ const CHEST_PATHOLOGIES = [
 ]
 const ALL_PATHOLOGIES = [...MSK_PATHOLOGIES, ...NEURO_PATHOLOGIES, ...CHEST_PATHOLOGIES]
 
+import { validateUploadedFile, ALLOWED_SCAN_MIME_TYPES } from "@/lib/validations"
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -122,13 +124,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const formData = await req.formData()
-    const file = formData.get("file") as File
-    const scanType = (formData.get("scanType") as string) || "auto"
-
-    if (!file) {
-      return NextResponse.json({ error: "No image or scan file provided." }, { status: 400 })
+    const formData = await req.formData().catch(() => null)
+    if (!formData) {
+      return NextResponse.json({ error: "Invalid form data" }, { status: 400 })
     }
+
+    const rawFile = formData.get("file")
+    const fileValidation = validateUploadedFile(rawFile, ALLOWED_SCAN_MIME_TYPES)
+    if (!fileValidation.valid) {
+      return fileValidation.response
+    }
+
+    const file = fileValidation.file
+    const rawScanType = formData.get("scanType")
+    const allowedScanTypes = ["auto", "chest", "fracture", "brain"]
+    const scanType = typeof rawScanType === "string" && allowedScanTypes.includes(rawScanType.toLowerCase().trim())
+      ? rawScanType.toLowerCase().trim()
+      : "auto"
 
     const fileBuffer = Buffer.from(await file.arrayBuffer())
     const filename = file.name || "chest_xray.png"

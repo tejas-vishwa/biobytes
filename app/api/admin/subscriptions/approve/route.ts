@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { AdminSubscriptionApprovalSchema, validateSchema } from "@/lib/validations"
 
 export async function POST(req: Request) {
   try {
@@ -10,10 +11,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { userId } = await req.json()
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 })
+    const rawBody = await req.json().catch(() => null)
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
     }
+
+    // 1. Strict Schema Validation
+    const validation = validateSchema(AdminSubscriptionApprovalSchema, rawBody)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const { userId } = validation.data
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
