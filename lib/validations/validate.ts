@@ -21,12 +21,14 @@ export function formatZodErrors(error: ZodError): ValidationErrorDetail[] {
  */
 export function createValidationErrorResponse(
   error: ZodError,
-  customMessage: string = "Input validation failed"
+  customMessage?: string
 ): NextResponse {
   const details = formatZodErrors(error)
+  const firstIssueMessage = details[0]?.message
+  const message = customMessage || firstIssueMessage || "Input validation failed"
   return NextResponse.json(
     {
-      error: customMessage,
+      error: message,
       details,
     },
     { status: 400 }

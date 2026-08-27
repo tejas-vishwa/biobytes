@@ -60,6 +60,18 @@ export default function RegisterPage() {
       return
     }
 
+    if (name.trim().length < 2) {
+      setError("Name must be at least 2 characters.")
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.")
+      setLoading(false)
+      return
+    }
+
     if (parseInt(mathAnswer) !== num1 + num2) {
       setError("Incorrect math answer. Please try again.")
       setLoading(false)
@@ -76,7 +88,7 @@ export default function RegisterPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to send verification code")
+        throw new Error(data.details?.[0]?.message || data.error || "Failed to send verification code")
       }
 
       setStep("OTP")
@@ -148,7 +160,7 @@ export default function RegisterPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || "Registration failed")
+        throw new Error(data.details?.[0]?.message || data.error || "Registration failed")
       }
 
       // Automatically sign the user in with Auth.js / NextAuth
@@ -231,11 +243,16 @@ export default function RegisterPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium leading-none" htmlFor="password">Password</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium leading-none" htmlFor="password">Password</label>
+                      <span className="text-[11px] text-muted-foreground">Min. 6 characters</span>
+                    </div>
                     <Input
                       id="password"
                       name="password"
                       type="password"
+                      placeholder="••••••••"
+                      minLength={6}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
