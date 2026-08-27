@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn, getSession } from "next-auth/react"
 import { BackButton } from "@/components/BackButton"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { User, Stethoscope, ShieldCheck, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
+import { User, Stethoscope, ShieldCheck, Lock, Eye, EyeOff, Loader2, Mail, CheckCircle2, RefreshCw, Sparkles } from "lucide-react"
 import { QurixLogo } from "@/components/QurixLogo"
 
 import { Button } from "@/components/ui/button"
@@ -27,13 +27,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<"login" | "magic-link" | "demo">("login")
+  const [activeTab, setActiveTab] = useState<"login" | "otp" | "demo">("login")
 
-  // Magic link states
-  const [magicEmail, setMagicEmail] = useState("")
+  // Email OTP Login states
+  const [otpEmail, setOtpEmail] = useState("")
+  const [otpCode, setOtpCode] = useState("")
+  const [otpStep, setOtpStep] = useState<"EMAIL" | "VERIFY">("EMAIL")
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpError, setOtpError] = useState("")
+  const [resendTimer, setResendTimer] = useState(0)
+  const [resending, setResending] = useState(false)
+
+  // Magic Link fallback states
   const [magicSent, setMagicSent] = useState(false)
   const [magicLoading, setMagicLoading] = useState(false)
-  const [magicError, setMagicError] = useState("")
 
   // Demo password protection states
   const [selectedDemoUser, setSelectedDemoUser] = useState<DemoAccount | null>(null)
@@ -43,38 +50,34 @@ export default function LoginPage() {
   const [showDemoPassword, setShowDemoPassword] = useState(false)
   const [verifyingDemo, setVerifyingDemo] = useState(false)
 
-  const onMagicLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!magicEmail.trim()) return
+  // Resend countdown timer effect
+  useEffect(() => {
+    if (resendTimer <= 0) return
+    const interval = setInterval(() => {
+      setResendTimer((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [resendTimer])
 
-    setMagicLoading(true)
-    setMagicError("")
-
-    try {
-      const res = await signIn("email", {
-        email: magicEmail.trim().toLowerCase(),
-        redirect: false,
-        callbackUrl: "/patient/dashboard",
-      })
-
-      if (res?.error) {
-        setMagicError("Failed to dispatch magic link. Please verify your email and try again.")
-      } else {
-        setMagicSent(true)
-      }
-    } catch (err) {
-      setMagicError("An unexpected error occurred. Please try again.")
-    } finally {
-      setMagicLoading(false)
+  const redirectByRole = async () => {
+    const session = await getSession()
+    if (session?.user?.role === "ADMIN") {
+      router.push("/admin")
+    } else if (session?.user?.role === "DOCTOR") {
+      router.push("/doctor/dashboard")
+    } else {
+      router.push("/patient/dashboard")
     }
+    router.refresh()
   }
 
+  // 1. Password-based Login
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
     const res = await signIn("credentials", {
-      email,
+      email: email.trim().toLowerCase(),
       password,
       redirect: false,
     })
@@ -87,18 +90,118 @@ export default function LoginPage() {
       }
       setLoading(false)
     } else {
-      const session = await getSession()
-      if (session?.user?.role === "ADMIN") {
-        router.push("/admin")
-      } else if (session?.user?.role === "DOCTOR") {
-        router.push("/doctor/dashboard")
-      } else {
-        router.push("/patient/dashboard")
-      }
-      router.refresh()
+      await redirectByRole()
     }
   }
 
+  // 2. Send Sign-In OTP to Email
+  const onSendSignInOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!otpEmail.trim()) return
+
+    setOtpLoading(true)
+    setOtpError("")
+
+    try {
+      const res = await fetch("/api/auth/send-signin-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail.trim().toLowerCase() }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.details?.[0]?.message || data.error || "Failed to send verification code")
+      }
+
+      setOtpStep("VERIFY")
+      setResendTimer(60)
+      setOtpCode("")
+    } catch (err: any) {
+      setOtpError(err.message)
+    } finally {
+      setOtpLoading(false)
+    }
+  }
+
+  // Resend Sign-In OTP
+  const onResendSignInOtp = async () => {
+    if (resendTimer > 0 || resending) return
+    setResending(true)
+    setOtpError("")
+
+    try {
+      const res = await fetch("/api/auth/send-signin-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail.trim().toLowerCase() }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.details?.[0]?.message || data.error || "Failed to resend code")
+      }
+
+      setResendTimer(60)
+    } catch (err: any) {
+      setOtpError(err.message)
+    } finally {
+      setResending(false)
+    }
+  }
+
+  // 3. Verify OTP and Sign In
+  const onVerifySignInOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setOtpError("Please enter the 6-digit verification code.")
+      return
+    }
+
+    setOtpLoading(true)
+    setOtpError("")
+
+    const res = await signIn("credentials", {
+      email: otpEmail.trim().toLowerCase(),
+      otp: otpCode.trim(),
+      redirect: false,
+    })
+
+    if (res?.error) {
+      setOtpError(res.error === "CredentialsSignin" ? "Invalid or expired verification code." : res.error)
+      setOtpLoading(false)
+    } else {
+      await redirectByRole()
+    }
+  }
+
+  // 4. Fallback Magic Link Sign-In
+  const onSendMagicLink = async () => {
+    if (!otpEmail.trim()) return
+    setMagicLoading(true)
+    setOtpError("")
+
+    try {
+      const res = await signIn("email", {
+        email: otpEmail.trim().toLowerCase(),
+        redirect: false,
+        callbackUrl: "/patient/dashboard",
+      })
+
+      if (res?.error) {
+        setOtpError("Failed to send magic link. Please try again.")
+      } else {
+        setMagicSent(true)
+      }
+    } catch (err) {
+      setOtpError("An unexpected error occurred. Please try again.")
+    } finally {
+      setMagicLoading(false)
+    }
+  }
+
+  // Demo user handlers
   const openDemoModal = (account: DemoAccount) => {
     setSelectedDemoUser(account)
     setDemoPassword("")
@@ -125,7 +228,6 @@ export default function LoginPage() {
       redirect: false,
     })
 
-    // If first attempt fails (e.g. DB not seeded yet), trigger setup-db API and retry automatically
     if (res?.error) {
       try {
         await fetch("/api/setup-db")
@@ -175,217 +277,353 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <Card>
+        <Card className="shadow-sm border-slate-200 dark:border-slate-800">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold tracking-tight">
               Sign in to QURIX
             </CardTitle>
             <CardDescription>
-              Enter your credentials to access your portal
+              Choose your preferred sign-in method
             </CardDescription>
           </CardHeader>
-          <form onSubmit={onSubmit}>
-            <CardContent className="space-y-4">
-              {/* Tab Selector */}
-              <div className="flex bg-muted p-1 rounded-lg w-full mb-6">
-                <button 
-                  type="button"
-                  onClick={() => setActiveTab("login")}
-                  className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "login" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Password
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setActiveTab("magic-link")}
-                  className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "magic-link" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Magic Link
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setActiveTab("demo")}
-                  className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "demo" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Demo Users
-                </button>
-              </div>
 
-              {activeTab === "login" ? (
-                <>
-                  {error && <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">{error}</div>}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium leading-none" htmlFor="email">Email</label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="m@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+          <CardContent className="space-y-4">
+            {/* Tab Selector */}
+            <div className="flex bg-muted p-1 rounded-lg w-full mb-6">
+              <button 
+                type="button"
+                onClick={() => setActiveTab("login")}
+                className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "login" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Password
+              </button>
+              <button 
+                type="button"
+                onClick={() => setActiveTab("otp")}
+                className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "otp" ? "bg-background text-foreground shadow-sm font-semibold text-emerald-600 dark:text-emerald-400" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Email OTP
+              </button>
+              <button 
+                type="button"
+                onClick={() => setActiveTab("demo")}
+                className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "demo" ? "bg-background text-foreground shadow-sm font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Demo Users
+              </button>
+            </div>
+
+            {/* TAB 1: Password Login */}
+            {activeTab === "login" && (
+              <form onSubmit={onSubmit} className="space-y-4">
+                {error && (
+                  <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">
+                    {error}
                   </div>
-                  <div className="space-y-2">
+                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none" htmlFor="email">Email</label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <label className="text-sm font-medium leading-none" htmlFor="password">Password</label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpEmail(email)
+                        setActiveTab("otp")
+                      }}
+                      className="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium underline"
+                    >
+                      Sign in with Email OTP
+                    </button>
                   </div>
-                </>
-              ) : activeTab === "magic-link" ? (
-                <div className="space-y-4">
-                  {magicSent ? (
-                    <div className="text-center py-4 space-y-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-                      <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 rounded-full flex items-center justify-center mx-auto text-lg font-bold">
-                        ✓
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </form>
+            )}
+
+            {/* TAB 2: Email OTP Sign-In */}
+            {activeTab === "otp" && (
+              <div className="space-y-4">
+                {otpError && (
+                  <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">
+                    {otpError}
+                  </div>
+                )}
+
+                {magicSent ? (
+                  <div className="text-center py-4 space-y-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 rounded-full flex items-center justify-center mx-auto text-lg font-bold">
+                      ✓
+                    </div>
+                    <h4 className="font-semibold text-slate-900 dark:text-slate-100">Check your inbox</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      A magic sign-in link was dispatched to <strong>{otpEmail}</strong>. Click the link in your email to log in instantly.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setMagicSent(false)}
+                      className="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline"
+                    >
+                      Enter 6-digit OTP code instead
+                    </button>
+                  </div>
+                ) : otpStep === "EMAIL" ? (
+                  <form onSubmit={onSendSignInOtp} className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Enter your email address and we&apos;ll send you a 6-digit verification code to sign in without a password.
+                    </p>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none" htmlFor="otp-email">Email</label>
+                      <Input
+                        id="otp-email"
+                        type="email"
+                        placeholder="you@domain.com"
+                        value={otpEmail}
+                        onChange={(e) => {
+                          setOtpEmail(e.target.value)
+                          if (otpError) setOtpError("")
+                        }}
+                        required
+                        disabled={otpLoading}
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      disabled={otpLoading || !otpEmail.trim()}
+                    >
+                      {otpLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending Code...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" /> Send Verification Code
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={onVerifySignInOtp} className="space-y-4">
+                    <div className="text-center space-y-1">
+                      <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-1">
+                        <Mail className="h-5 w-5" />
                       </div>
-                      <h4 className="font-semibold text-slate-900 dark:text-slate-100">Check your inbox</h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                        We sent a magic sign-in link to <strong>{magicEmail}</strong>. Click the link in your email to log in instantly.
+                      <p className="text-xs text-muted-foreground">
+                        We sent a 6-digit verification code to <br />
+                        <strong className="text-foreground font-medium">{otpEmail}</strong>
                       </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none text-center block" htmlFor="otp-code">
+                        Enter 6-Digit Code
+                      </label>
+                      <Input
+                        id="otp-code"
+                        name="otp-code"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        placeholder="• • • • • •"
+                        value={otpCode}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "")
+                          setOtpCode(val)
+                          if (otpError) setOtpError("")
+                        }}
+                        autoFocus
+                        required
+                        disabled={otpLoading}
+                        className="text-center text-2xl font-mono tracking-[0.4em] py-5 font-bold"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                       <button
                         type="button"
                         onClick={() => {
-                          setMagicSent(false)
-                          setMagicEmail("")
+                          setOtpStep("EMAIL")
+                          setOtpError("")
                         }}
-                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline"
+                        className="hover:underline text-muted-foreground hover:text-foreground"
                       >
-                        Try another email
+                        Change Email
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={onResendSignInOtp}
+                        disabled={resendTimer > 0 || resending}
+                        className="text-emerald-600 hover:text-emerald-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        {resending ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Sending...
+                          </>
+                        ) : resendTimer > 0 ? (
+                          `Resend code in ${resendTimer}s`
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3" /> Resend Code
+                          </>
+                        )}
                       </button>
                     </div>
-                  ) : (
-                    <>
-                      {magicError && <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">{magicError}</div>}
-                      <p className="text-xs text-muted-foreground">
-                        Enter your email address and we&apos;ll send you a passwordless sign-in link via MailerSend.
-                      </p>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium leading-none" htmlFor="magic-email">Email</label>
-                        <Input
-                          id="magic-email"
-                          type="email"
-                          placeholder="you@domain.com"
-                          value={magicEmail}
-                          onChange={(e) => setMagicEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <Button
+
+                    <Button
+                      type="submit"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      disabled={otpLoading || otpCode.length !== 6}
+                    >
+                      {otpLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" /> Verify & Sign In
+                        </>
+                      )}
+                    </Button>
+
+                    <div className="text-center pt-1">
+                      <button
                         type="button"
-                        onClick={onMagicLinkSubmit}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                        disabled={magicLoading || !magicEmail.trim()}
+                        onClick={onSendMagicLink}
+                        disabled={magicLoading}
+                        className="text-[11px] text-muted-foreground hover:text-foreground underline flex items-center justify-center gap-1 mx-auto"
                       >
-                        {magicLoading ? "Sending Magic Link..." : "Send Magic Link"}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Patient Demo Accounts */}
-                  <div className="w-full space-y-2">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5" /> Patients
-                      </span>
-                      <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
-                        <Lock className="h-3 w-3" /> Password Protected
-                      </span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {patients.map((p) => (
-                        <Button
-                          key={p.email}
-                          type="button"
-                          variant="outline"
-                          className={`text-xs py-2 h-auto flex items-center justify-between px-3 ${p.color ? colorMap[p.color] : ""}`}
-                          onClick={() => openDemoModal(p)}
-                          disabled={loading || verifyingDemo}
-                        >
-                          <span className="truncate">{p.name}</span>
-                          <Lock className="h-3 w-3 opacity-60 ml-1 shrink-0" />
-                        </Button>
-                      ))}
+                        <Sparkles className="h-3 w-3 text-emerald-500" />
+                        {magicLoading ? "Sending magic link..." : "Prefer a Magic Link? Click to send"}
+                      </button>
                     </div>
-                  </div>
+                  </form>
+                )}
+              </div>
+            )}
 
-                  {/* Doctor Demo Account */}
-                  <div className="w-full space-y-2">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Stethoscope className="h-3.5 w-3.5" /> Doctor
-                      </span>
-                      <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
-                        <Lock className="h-3 w-3" /> Password Protected
-                      </span>
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 flex items-center justify-between px-3"
-                      onClick={() => openDemoModal({
-                        name: "Dr. Rahul Verma",
-                        email: "doctor@demo.com",
-                        role: "Doctor",
-                        roleUrl: "/doctor/dashboard"
-                      })}
-                      disabled={loading || verifyingDemo}
-                    >
-                      <span>Dr. Rahul Verma</span>
-                      <Lock className="h-3 w-3 opacity-60 shrink-0" />
-                    </Button>
-                  </div>
-
-                  {/* Admin Demo Account */}
-                  <div className="w-full space-y-2">
-                    <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5" /> Admin
-                      </span>
-                      <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
-                        <Lock className="h-3 w-3" /> Password Protected
-                      </span>
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800 flex items-center justify-between px-3"
-                      onClick={() => openDemoModal({
-                        name: "Super Admin",
-                        email: "admin@teamqurix.com",
-                        role: "Administrator",
-                        roleUrl: "/admin"
-                      })}
-                      disabled={loading || verifyingDemo}
-                    >
-                      <span>Super Admin</span>
-                      <Lock className="h-3 w-3 opacity-60 shrink-0" />
-                    </Button>
+            {/* TAB 3: Demo Accounts */}
+            {activeTab === "demo" && (
+              <div className="space-y-6">
+                {/* Patient Demo Accounts */}
+                <div className="w-full space-y-2">
+                  <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" /> Patients
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
+                      <Lock className="h-3 w-3" /> Password Protected
+                    </span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {patients.map((p) => (
+                      <Button
+                        key={p.email}
+                        type="button"
+                        variant="outline"
+                        className={`text-xs py-2 h-auto flex items-center justify-between px-3 ${p.color ? colorMap[p.color] : ""}`}
+                        onClick={() => openDemoModal(p)}
+                        disabled={loading || verifyingDemo}
+                      >
+                        <span className="truncate">{p.name}</span>
+                        <Lock className="h-3 w-3 opacity-60 ml-1 shrink-0" />
+                      </Button>
+                    ))}
                   </div>
                 </div>
-              )}
-            </CardContent>
-            
-            {activeTab === "login" && (
-              <CardFooter className="flex flex-col space-y-4">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign in"}
-                </Button>
-              </CardFooter>
+
+                {/* Doctor Demo Account */}
+                <div className="w-full space-y-2">
+                  <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Stethoscope className="h-3.5 w-3.5" /> Doctor
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
+                      <Lock className="h-3 w-3" /> Password Protected
+                    </span>
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 flex items-center justify-between px-3"
+                    onClick={() => openDemoModal({
+                      name: "Dr. Rahul Verma",
+                      email: "doctor@demo.com",
+                      role: "Doctor",
+                      roleUrl: "/doctor/dashboard"
+                    })}
+                    disabled={loading || verifyingDemo}
+                  >
+                    <span>Dr. Rahul Verma</span>
+                    <Lock className="h-3 w-3 opacity-60 shrink-0" />
+                  </Button>
+                </div>
+
+                {/* Admin Demo Account */}
+                <div className="w-full space-y-2">
+                  <p className="text-xs text-muted-foreground font-semibold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5" /> Admin
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-normal text-muted-foreground/80">
+                      <Lock className="h-3 w-3" /> Password Protected
+                    </span>
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800 flex items-center justify-between px-3"
+                    onClick={() => openDemoModal({
+                      name: "Super Admin",
+                      email: "admin@teamqurix.com",
+                      role: "Administrator",
+                      roleUrl: "/admin"
+                    })}
+                    disabled={loading || verifyingDemo}
+                  >
+                    <span>Super Admin</span>
+                    <Lock className="h-3 w-3 opacity-60 shrink-0" />
+                  </Button>
+                </div>
+              </div>
             )}
-          </form>
+          </CardContent>
         </Card>
 
         <div className="text-sm text-center text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-primary hover:underline">
-            Sign Up
+          <Link href="/register" className="text-primary hover:underline font-medium">
+            Sign Up with Email Verification
           </Link>
         </div>
       </div>
@@ -472,4 +710,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

@@ -40,15 +40,22 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email", placeholder: "m@example.com" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        otp: { label: "OTP", type: "text" }
       },
       async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email) {
           return null
         }
 
         const emailLower = credentials.email.toLowerCase().trim()
         const clientIp = req ? getClientIp(req as any) : "127.0.0.1"
+        const otp = credentials.otp ? credentials.otp.trim() : null
+        const password = credentials.password
+
+        if (!password && !otp) {
+          return null
+        }
 
         // 1. Check Rate Limiting & Exponential Backoff for this account / IP
         const authRateLimit = checkAuthLimit(clientIp, emailLower)
@@ -91,32 +98,65 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Your account has been suspended.")
           }
 
-          let isPasswordValid = await compare(credentials.password, user.passwordHash)
+          // Case A: Sign In via 6-Digit Email OTP
+          if (otp) {
+            const verificationToken = await prisma.verificationToken.findFirst({
+              where: {
+                identifier: `signin-otp:${emailLower}`,
+                token: otp,
+                expires: { gt: new Date() },
+              },
+            })
 
-          // Support standard demo credentials (demo1234, BB@1234@QURIX) seamlessly
-          if (!isPasswordValid && (emailLower.includes("demo") || emailLower.includes("biobytes") || emailLower.includes("qurix"))) {
-            if (
-              credentials.password === "BB@1234@QURIX" ||
-              credentials.password === "demo1234" ||
-              credentials.password === "BB@quirx.in" ||
-              credentials.password === "demo"
-            ) {
-              isPasswordValid = true
+            if (!verificationToken) {
+              recordAuthFailure(clientIp, emailLower)
+              throw new Error("Invalid or expired verification code.")
             }
-          }
 
-          if (!isPasswordValid) {
-            const backoffInfo = recordAuthFailure(clientIp, emailLower)
-            await prisma.activityLog.create({
-              data: { action: "LOGIN_FAILED", details: `Invalid password for ${user.email}`, userId: user.id }
+            // Clean up used OTP token
+            await prisma.verificationToken.deleteMany({
+              where: { identifier: `signin-otp:${emailLower}` },
             }).catch(() => {})
 
-            if (backoffInfo.retryAfter > 0) {
-              throw new Error(
-                `Too many failed attempts. Temporary exponential backoff applied: wait ${backoffInfo.retryAfter}s before retry.`
-              )
+            // Mark email as verified if not already
+            if (!user.emailVerified) {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { emailVerified: new Date() },
+              }).catch(() => {})
             }
-            return null
+          } else if (password) {
+            // Case B: Sign In via Password
+            let isPasswordValid = false
+            if (user.passwordHash) {
+              isPasswordValid = await compare(password, user.passwordHash)
+            }
+
+            // Support standard demo credentials (demo1234, BB@1234@QURIX) seamlessly
+            if (!isPasswordValid && (emailLower.includes("demo") || emailLower.includes("biobytes") || emailLower.includes("qurix"))) {
+              if (
+                password === "BB@1234@QURIX" ||
+                password === "demo1234" ||
+                password === "BB@quirx.in" ||
+                password === "demo"
+              ) {
+                isPasswordValid = true
+              }
+            }
+
+            if (!isPasswordValid) {
+              const backoffInfo = recordAuthFailure(clientIp, emailLower)
+              await prisma.activityLog.create({
+                data: { action: "LOGIN_FAILED", details: `Invalid password for ${user.email}`, userId: user.id }
+              }).catch(() => {})
+
+              if (backoffInfo.retryAfter > 0) {
+                throw new Error(
+                  `Too many failed attempts. Temporary exponential backoff applied: wait ${backoffInfo.retryAfter}s before retry.`
+                )
+              }
+              return null
+            }
           }
 
           // Successful authentication: Reset consecutive failures
