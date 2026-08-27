@@ -24,12 +24,29 @@ export const RegisterSchema = z
       })
       .optional()
       .default("PATIENT"),
+    otp: z
+      .string()
+      .trim()
+      .length(6, "OTP must be a 6-digit code")
+      .regex(/^\d{6}$/, "OTP must consist of 6 digits")
+      .optional(),
     botCheck: z.union([z.string(), z.boolean()]).optional(),
     mathAnswer: z
       .number({ required_error: "Security challenge answer is required" })
       .int("Answer must be an integer"),
     num1: z.number({ required_error: "num1 is required" }).int(),
     num2: z.number({ required_error: "num2 is required" }).int(),
+  })
+  .strict()
+
+export const SendOtpSchema = z
+  .object({
+    email: z
+      .string({ required_error: "Email is required" })
+      .trim()
+      .toLowerCase()
+      .email("Please provide a valid email address")
+      .max(255, "Email cannot exceed 255 characters"),
   })
   .strict()
 

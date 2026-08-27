@@ -1,0 +1,96 @@
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { seedDatabase } from "@/lib/seed-db"
+import { sendOtpEmail } from "@/lib/mailersend"
+import { SendOtpSchema, validateSchema } from "@/lib/validations"
+import {
+  getClientIp,
+  checkAuthLimit,
+  recordAuthFailure,
+  recordAuthSuccess,
+  createRateLimitResponse,
+} from "@/lib/rate-limit"
+
+export const dynamic = "force-dynamic"
+
+export async function POST(req: Request) {
+  const clientIp = getClientIp(req)
+
+  try {
+    const rawBody = await req.json().catch(() => null)
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid JSON request body" }, { status: 400 })
+    }
+
+    const validation = validateSchema(SendOtpSchema, rawBody)
+    if (!validation.success) {
+      return validation.response
+    }
+
+    const { email } = validation.data
+    const normalizedEmail = email.toLowerCase().trim()
+
+    // Rate Limiting check
+    const rateLimit = checkAuthLimit(clientIp, normalizedEmail)
+    if (!rateLimit.allowed) {
+      return createRateLimitResponse(
+        rateLimit.retryAfter,
+        rateLimit.limit,
+        rateLimit.remaining,
+        rateLimit.reset,
+        `Too many OTP requests. Please wait ${rateLimit.retryAfter}s before requesting again.`
+      )
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    }).catch(async () => {
+      await seedDatabase()
+      return await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    })
+
+    if (existingUser) {
+      recordAuthFailure(clientIp, normalizedEmail)
+      return NextResponse.json(
+        { error: "An account with this email address already exists. Please sign in instead." },
+        { status: 409 }
+      )
+    }
+
+    // Generate 6-digit OTP code
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    const identifier = `signup-otp:${normalizedEmail}`
+    const expires = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+
+    // Clear any previous signup OTP tokens for this email
+    await prisma.verificationToken.deleteMany({
+      where: { identifier },
+    }).catch(() => {})
+
+    // Create fresh verification token
+    await prisma.verificationToken.create({
+      data: {
+        identifier,
+        token: otp,
+        expires,
+      },
+    })
+
+    // Send the email via MailerSend
+    await sendOtpEmail({ to: normalizedEmail, otp })
+
+    recordAuthSuccess(clientIp, normalizedEmail)
+
+    return NextResponse.json({
+      success: true,
+      message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
+    })
+  } catch (error: any) {
+    console.error("Send signup OTP error:", error)
+    return NextResponse.json(
+      { error: "Failed to send verification code. Please try again later." },
+      { status: 500 }
+    )
+  }
+}

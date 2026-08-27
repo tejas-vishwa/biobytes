@@ -70,10 +70,40 @@ export async function POST(req: Request) {
 
     if (existingUser) {
       recordAuthFailure(clientIp, normalizedEmail)
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
+      return NextResponse.json({ error: "An account with this email already exists. Please sign in instead." }, { status: 409 })
     }
 
-    // 6. Hash password & Create user
+    // 6. Verify Email OTP
+    const { otp } = validation.data
+    if (!otp) {
+      return NextResponse.json(
+        { error: "Email verification is required. Please enter the 6-digit OTP sent to your email." },
+        { status: 400 }
+      )
+    }
+
+    const verificationToken = await prisma.verificationToken.findFirst({
+      where: {
+        identifier: `signup-otp:${normalizedEmail}`,
+        token: otp,
+        expires: { gt: new Date() },
+      },
+    })
+
+    if (!verificationToken) {
+      recordAuthFailure(clientIp, normalizedEmail)
+      return NextResponse.json(
+        { error: "Invalid or expired verification code. Please request a new OTP." },
+        { status: 400 }
+      )
+    }
+
+    // Delete used verification token
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: `signup-otp:${normalizedEmail}` },
+    }).catch(() => {})
+
+    // 7. Hash password & Create user
     const hashedPassword = await bcrypt.hash(password, 10)
 
     const user = await prisma.user.create({
@@ -81,6 +111,7 @@ export async function POST(req: Request) {
         name,
         email: normalizedEmail,
         passwordHash: hashedPassword,
+        emailVerified: new Date(),
         role: role || "PATIENT",
       },
     })
