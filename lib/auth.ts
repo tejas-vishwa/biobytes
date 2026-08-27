@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { seedDatabase } from "@/lib/seed-db"
 import { checkAuthLimit, recordAuthFailure, recordAuthSuccess, getClientIp } from "@/lib/rate-limit"
 
-if (!process.env.NEXTAUTH_SECRET) {
-  process.env.NEXTAUTH_SECRET = "qurix-production-secret-2026"
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== "production") {
+  process.env.NEXTAUTH_SECRET = "dev-secret-change-in-production-32chars"
 }
 
 if (!process.env.NEXTAUTH_URL && process.env.VERCEL_URL) {

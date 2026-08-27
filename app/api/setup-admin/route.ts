@@ -4,10 +4,17 @@ import { hash } from "bcryptjs";
 
 export const dynamic = "force-dynamic"
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const email = "admin@teamqurix.com";
-    const password = "BB@1234@QURIX";
+    const authHeader = req.headers.get("authorization");
+    const setupSecret = process.env.ADMIN_SETUP_SECRET || process.env.CRON_SECRET;
+    
+    if (setupSecret && authHeader !== `Bearer ${setupSecret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const email = process.env.ADMIN_DEFAULT_EMAIL || "admin@teamqurix.com";
+    const password = process.env.ADMIN_DEFAULT_PASSWORD || "BB@1234@QURIX";
 
     // Check if the admin already exists
     const existingUser = await prisma.user.findUnique({

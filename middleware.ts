@@ -10,7 +10,7 @@ import {
   applyRateLimitHeaders,
 } from "@/lib/rate-limit/limiter"
 
-const SECRET = process.env.NEXTAUTH_SECRET || "qurix-production-secret-2026"
+const SECRET = process.env.NEXTAUTH_SECRET || (process.env.NODE_ENV !== "production" ? "dev-secret-change-in-production-32chars" : undefined)
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
