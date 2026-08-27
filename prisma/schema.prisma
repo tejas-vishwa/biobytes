@@ -10,7 +10,8 @@ datasource db {
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
-  passwordHash  String
+  passwordHash  String?
+  emailVerified DateTime?
   name          String?
   gender        String?
   age           Int?
@@ -285,4 +286,12 @@ model MedicalScan {
   pathologiesJson  String?  // Extracted JSON array of pathologies & probabilities
   summary          String?
   createdAt        DateTime @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }

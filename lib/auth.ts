@@ -1,9 +1,12 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import EmailProvider from "next-auth/providers/email"
+import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { compare } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { seedDatabase } from "@/lib/seed-db"
 import { checkAuthLimit, recordAuthFailure, recordAuthSuccess, getClientIp } from "@/lib/rate-limit"
+import { sendMagicLinkEmail } from "@/lib/mailersend"
 
 if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== "production") {
   process.env.NEXTAUTH_SECRET = "dev-secret-change-in-production-32chars"
@@ -14,6 +17,7 @@ if (!process.env.NEXTAUTH_URL && process.env.VERCEL_URL) {
 }
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
@@ -21,8 +25,17 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    verifyRequest: "/login?verify=true",
   },
   providers: [
+    EmailProvider({
+      server: {}, // Custom transport handled directly via MailerSend Node SDK
+      from: process.env.MAILERSEND_FROM_EMAIL || "noreply@qurix.health",
+      async sendVerificationRequest({ identifier: to, url }) {
+        const { host } = new URL(url)
+        await sendMagicLinkEmail({ to, url, host })
+      },
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -149,9 +162,9 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role
-        token.subscriptionTier = (user as any).subscriptionTier
-        token.paymentStatus = (user as any).paymentStatus
+        token.role = (user as any).role || "PATIENT"
+        token.subscriptionTier = (user as any).subscriptionTier || "FREE"
+        token.paymentStatus = (user as any).paymentStatus || "NONE"
       }
       return token
     }

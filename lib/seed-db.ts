@@ -182,11 +182,18 @@ export async function createTablesIfNotExist() {
       FOREIGN KEY ("patientId") REFERENCES "User" ("id") ON DELETE CASCADE,
       FOREIGN KEY ("prescriptionId") REFERENCES "Prescription" ("id") ON DELETE CASCADE
     );`,
+    `CREATE TABLE IF NOT EXISTS "VerificationToken" (
+      "identifier" TEXT NOT NULL,
+      "token" TEXT NOT NULL UNIQUE,
+      "expires" DATETIME NOT NULL
+    );`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");`,
     `ALTER TABLE "User" ADD COLUMN "subscriptionTier" TEXT NOT NULL DEFAULT 'FREE';`,
     `ALTER TABLE "User" ADD COLUMN "paymentStatus" TEXT NOT NULL DEFAULT 'NONE';`,
     `ALTER TABLE "User" ADD COLUMN "gender" TEXT;`,
     `ALTER TABLE "User" ADD COLUMN "age" INTEGER;`,
     `ALTER TABLE "User" ADD COLUMN "location" TEXT;`,
+    `ALTER TABLE "User" ADD COLUMN "emailVerified" DATETIME;`,
     `ALTER TABLE "LabPartner" ADD COLUMN "yearEstablished" INTEGER;`,
     `ALTER TABLE "LabPartner" ADD COLUMN "contactPerson" TEXT;`,
     `ALTER TABLE "LabPartner" ADD COLUMN "email" TEXT;`,

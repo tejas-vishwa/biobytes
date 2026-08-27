@@ -27,7 +27,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<"login" | "demo">("login")
+  const [activeTab, setActiveTab] = useState<"login" | "magic-link" | "demo">("login")
+
+  // Magic link states
+  const [magicEmail, setMagicEmail] = useState("")
+  const [magicSent, setMagicSent] = useState(false)
+  const [magicLoading, setMagicLoading] = useState(false)
+  const [magicError, setMagicError] = useState("")
 
   // Demo password protection states
   const [selectedDemoUser, setSelectedDemoUser] = useState<DemoAccount | null>(null)
@@ -36,6 +42,32 @@ export default function LoginPage() {
   const [demoError, setDemoError] = useState("")
   const [showDemoPassword, setShowDemoPassword] = useState(false)
   const [verifyingDemo, setVerifyingDemo] = useState(false)
+
+  const onMagicLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!magicEmail.trim()) return
+
+    setMagicLoading(true)
+    setMagicError("")
+
+    try {
+      const res = await signIn("email", {
+        email: magicEmail.trim().toLowerCase(),
+        redirect: false,
+        callbackUrl: "/patient/dashboard",
+      })
+
+      if (res?.error) {
+        setMagicError("Failed to dispatch magic link. Please verify your email and try again.")
+      } else {
+        setMagicSent(true)
+      }
+    } catch (err) {
+      setMagicError("An unexpected error occurred. Please try again.")
+    } finally {
+      setMagicLoading(false)
+    }
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -159,14 +191,21 @@ export default function LoginPage() {
                 <button 
                   type="button"
                   onClick={() => setActiveTab("login")}
-                  className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "login" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "login" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  Authentication
+                  Password
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setActiveTab("magic-link")}
+                  className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "magic-link" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Magic Link
                 </button>
                 <button 
                   type="button"
                   onClick={() => setActiveTab("demo")}
-                  className={`flex-1 text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "demo" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 text-xs sm:text-sm font-medium py-1.5 rounded-md transition-all ${activeTab === "demo" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   Demo Users
                 </button>
@@ -197,6 +236,56 @@ export default function LoginPage() {
                     />
                   </div>
                 </>
+              ) : activeTab === "magic-link" ? (
+                <div className="space-y-4">
+                  {magicSent ? (
+                    <div className="text-center py-4 space-y-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+                      <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 rounded-full flex items-center justify-center mx-auto text-lg font-bold">
+                        ✓
+                      </div>
+                      <h4 className="font-semibold text-slate-900 dark:text-slate-100">Check your inbox</h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        We sent a magic sign-in link to <strong>{magicEmail}</strong>. Click the link in your email to log in instantly.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMagicSent(false)
+                          setMagicEmail("")
+                        }}
+                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline"
+                      >
+                        Try another email
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {magicError && <div className="text-sm text-destructive font-medium text-center rounded-md bg-destructive/10 p-3">{magicError}</div>}
+                      <p className="text-xs text-muted-foreground">
+                        Enter your email address and we&apos;ll send you a passwordless sign-in link via MailerSend.
+                      </p>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none" htmlFor="magic-email">Email</label>
+                        <Input
+                          id="magic-email"
+                          type="email"
+                          placeholder="you@domain.com"
+                          value={magicEmail}
+                          onChange={(e) => setMagicEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={onMagicLinkSubmit}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                        disabled={magicLoading || !magicEmail.trim()}
+                      >
+                        {magicLoading ? "Sending Magic Link..." : "Send Magic Link"}
+                      </Button>
+                    </>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-6">
                   {/* Patient Demo Accounts */}
