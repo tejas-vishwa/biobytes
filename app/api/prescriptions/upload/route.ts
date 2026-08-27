@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { extractPrescriptionData, sanitizeMedications } from "@/lib/gemini-ocr"
-import { validateUploadedFile, ALLOWED_DOCUMENT_MIME_TYPES } from "@/lib/validations"
+import { validateUploadedFile, ALLOWED_DOCUMENT_MIME_TYPES, verifyFileContentMagicBytes, sanitizeSafeFileName } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -28,8 +28,16 @@ export async function POST(req: Request) {
     const file = fileValidation.file
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+
+    // Verify raw magic bytes content
+    const magicCheck = verifyFileContentMagicBytes(buffer)
+    if (!magicCheck.valid) {
+      return NextResponse.json({ error: magicCheck.error || "Invalid file content signature" }, { status: 400 })
+    }
+
+    const safeFileName = sanitizeSafeFileName(file.name, "prescription")
     const fileBase64 = buffer.toString("base64")
-    const mimeType = file.type || "application/pdf"
+    const mimeType = magicCheck.detectedType || file.type || "application/pdf"
 
     // 1. Process prescription document via Gemini Structured Outputs (strictly for prescriptions)
     const extractedData = await extractPrescriptionData(buffer, mimeType)
@@ -40,9 +48,9 @@ export async function POST(req: Request) {
 
     const medicines = sanitizedMeds.map(m => ({
       name: m.name,
-      dosage: m.dosage || "As prescribed",
-      duration: m.duration || undefined,
-      instructions: m.instructions || undefined
+      dosage: m.dosage || "As directed",
+      duration: m.duration || "As prescribed",
+      instructions: m.instructions || "After meals"
     }))
 
     const doctorName = extractedData.doctorName || extractedData.doctor?.name || null
@@ -59,7 +67,7 @@ export async function POST(req: Request) {
     const prescription = await prisma.prescription.create({
       data: {
         patientId: session.user.id,
-        fileName: file.name,
+        fileName: safeFileName,
         fileData: fileBase64,
         fileType: mimeType,
         status: "PARSED",

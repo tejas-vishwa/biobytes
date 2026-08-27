@@ -115,7 +115,7 @@ const CHEST_PATHOLOGIES = [
 ]
 const ALL_PATHOLOGIES = [...MSK_PATHOLOGIES, ...NEURO_PATHOLOGIES, ...CHEST_PATHOLOGIES]
 
-import { validateUploadedFile, ALLOWED_SCAN_MIME_TYPES } from "@/lib/validations"
+import { validateUploadedFile, ALLOWED_SCAN_MIME_TYPES, verifyFileContentMagicBytes, sanitizeSafeFileName } from "@/lib/validations"
 
 export async function POST(req: Request) {
   try {
@@ -136,16 +136,23 @@ export async function POST(req: Request) {
     }
 
     const file = fileValidation.file
+    const fileBuffer = Buffer.from(await file.arrayBuffer())
+
+    // Verify raw magic bytes content
+    const magicCheck = verifyFileContentMagicBytes(fileBuffer)
+    if (!magicCheck.valid) {
+      return NextResponse.json({ error: magicCheck.error || "Invalid file content signature" }, { status: 400 })
+    }
+
+    const filename = sanitizeSafeFileName(file.name, "medical_scan")
+    const mimeType = magicCheck.detectedType || file.type || (filename.toLowerCase().endsWith(".dcm") ? "application/dicom" : "image/png")
+    const base64Data = fileBuffer.toString("base64")
+
     const rawScanType = formData.get("scanType")
     const allowedScanTypes = ["auto", "chest", "fracture", "brain"]
     const scanType = typeof rawScanType === "string" && allowedScanTypes.includes(rawScanType.toLowerCase().trim())
       ? rawScanType.toLowerCase().trim()
       : "auto"
-
-    const fileBuffer = Buffer.from(await file.arrayBuffer())
-    const filename = file.name || "chest_xray.png"
-    const mimeType = file.type || (filename.toLowerCase().endsWith(".dcm") ? "application/dicom" : "image/png")
-    const base64Data = fileBuffer.toString("base64")
 
     let resultData: any = null
 

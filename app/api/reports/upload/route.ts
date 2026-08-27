@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { extractMedicalData } from "@/lib/gemini-ocr"
 import { BIOMARKERS_100 } from "@/lib/biomarkers100"
-import { validateUploadedFile, ALLOWED_DOCUMENT_MIME_TYPES } from "@/lib/validations"
+import { validateUploadedFile, ALLOWED_DOCUMENT_MIME_TYPES, verifyFileContentMagicBytes, sanitizeSafeFileName } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -29,8 +29,16 @@ export async function POST(req: Request) {
     const file = fileValidation.file
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+
+    // Verify raw magic bytes content
+    const magicCheck = verifyFileContentMagicBytes(buffer)
+    if (!magicCheck.valid) {
+      return NextResponse.json({ error: magicCheck.error || "Invalid file content signature" }, { status: 400 })
+    }
+
+    const safeFileName = sanitizeSafeFileName(file.name, "medical_report")
     const base64Data = buffer.toString("base64")
-    const mimeType = file.type || "application/pdf"
+    const mimeType = magicCheck.detectedType || file.type || "application/pdf"
 
     // 1. Process medical document via Gemini Structured Outputs
     const extractedData = await extractMedicalData(buffer, mimeType)
@@ -39,7 +47,7 @@ export async function POST(req: Request) {
     const report = await prisma.report.create({
       data: {
         patientId: session.user.id,
-        fileName: file.name,
+        fileName: safeFileName,
         fileUrl: `/api/reports/placeholder/file`,
         fileData: base64Data,
         fileType: mimeType,
