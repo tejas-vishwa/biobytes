@@ -12,11 +12,13 @@ type ThemeProviderProps = {
 
 type ThemeProviderState = {
   theme: Theme
+  resolvedTheme: "dark" | "light"
   setTheme: (theme: Theme) => void
 }
 
 const initialState: ThemeProviderState = {
   theme: "system",
+  resolvedTheme: "light",
   setTheme: () => null,
 }
 
@@ -24,42 +26,62 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
 export function ThemeProvider({
   children,
-  defaultTheme = "dark",
+  defaultTheme = "system",
   storageKey = "qurix-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>("dark")
-  const [mounted, setMounted] = useState(false)
+  const [theme, setThemeState] = useState<Theme>("system")
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light")
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem(storageKey) as Theme) || defaultTheme
-    setThemeState(savedTheme)
-    setMounted(true)
-  }, [defaultTheme, storageKey])
+    // Clean up any previously stored manual theme overrides so device theme is strictly respected
+    try {
+      localStorage.removeItem(storageKey)
+    } catch (_) {}
 
-  useEffect(() => {
-    if (!mounted) return
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
 
-    const root = window.document.documentElement
-
-    root.classList.remove("light", "dark")
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-      root.classList.add(systemTheme)
-      return
+    const applyTheme = (isDark: boolean) => {
+      const root = window.document.documentElement
+      root.classList.remove("light", "dark")
+      if (isDark) {
+        root.classList.add("dark")
+        setResolvedTheme("dark")
+      } else {
+        root.classList.remove("dark")
+        setResolvedTheme("light")
+      }
     }
 
-    root.classList.add(theme)
-  }, [theme, mounted])
+    // Apply initial system preference
+    applyTheme(mediaQuery.matches)
+
+    // Listen for live system theme changes on the device
+    const handleChange = (e: MediaQueryListEvent) => {
+      applyTheme(e.matches)
+    }
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", handleChange)
+    } else {
+      // Compatibility for older browsers
+      mediaQuery.addListener(handleChange)
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener("change", handleChange)
+      } else {
+        mediaQuery.removeListener(handleChange)
+      }
+    }
+  }, [storageKey])
 
   const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
-      setThemeState(theme)
+    theme: "system" as Theme,
+    resolvedTheme,
+    setTheme: () => {
+      // Device theme strictly rules
     },
   }
 
@@ -72,9 +94,8 @@ export function ThemeProvider({
 
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext)
-
-  if (context === undefined)
+  if (context === undefined) {
     throw new Error("useTheme must be used within a ThemeProvider")
-
+  }
   return context
 }

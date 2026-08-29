@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="qurix-theme">
+    <ThemeProvider defaultTheme="system" storageKey="qurix-theme">
       <SessionProvider>{children}</SessionProvider>
     </ThemeProvider>
   )
