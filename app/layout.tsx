@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Providers } from "./providers"
 import "./globals.css"
 
@@ -8,6 +8,14 @@ export const metadata: Metadata = {
   icons: {
     icon: "/qurix-logo.svg",
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F7F9FC" },
+    { media: "(prefers-color-scheme: dark)", color: "#0A0F1D" },
+  ],
+  colorScheme: "light dark",
 }
 
 export default function RootLayout({
@@ -21,13 +29,18 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              try {
-                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
-              } catch (_) {}
+              (function() {
+                try {
+                  var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
+                  }
+                } catch (_) {}
+              })();
             `,
           }}
         />

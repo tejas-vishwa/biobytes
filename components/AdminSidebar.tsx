@@ -6,7 +6,6 @@ import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldAlert, Credit
 import { signOut } from "next-auth/react"
 import { useState } from "react"
 
-import { ThemeToggle } from "./ThemeToggle"
 import { QurixLogo } from "./QurixLogo"
 
 const navItems = [
@@ -60,10 +59,6 @@ export default function AdminSidebar() {
       </div>
 
       <div className="p-4 border-t border-border flex flex-col space-y-2">
-        <div className="flex items-center justify-between px-3 py-1">
-          <span className="text-xs font-medium text-muted-foreground">Theme</span>
-          <ThemeToggle />
-        </div>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"

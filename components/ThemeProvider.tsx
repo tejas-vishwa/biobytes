@@ -46,9 +46,11 @@ export function ThemeProvider({
       root.classList.remove("light", "dark")
       if (isDark) {
         root.classList.add("dark")
+        root.style.colorScheme = "dark"
         setResolvedTheme("dark")
       } else {
         root.classList.remove("dark")
+        root.style.colorScheme = "light"
         setResolvedTheme("light")
       }
     }
